@@ -7,10 +7,21 @@ from PyInstaller.utils.hooks import collect_data_files
 PROJECT_ROOT = Path(SPECPATH).resolve().parent
 ENTRYPOINT = PROJECT_ROOT / "soundtouchbose" / "__main__.py"
 ICON_PATH = PROJECT_ROOT / "soundtouchbose" / "resources" / "icon.ico"
-if str(PROJECT_ROOT) not in sys.path:
+# collect_data_files() runs while evaluating this spec, before Analysis.pathex is applied.
+added_project_root = False
+if not sys.path or sys.path[0] != str(PROJECT_ROOT):
     sys.path.insert(0, str(PROJECT_ROOT))
+    added_project_root = True
+if not ENTRYPOINT.exists():
+    raise FileNotFoundError(f"PyInstaller entrypoint not found: {ENTRYPOINT}")
+if not ICON_PATH.exists():
+    raise FileNotFoundError(f"PyInstaller icon not found: {ICON_PATH}")
 
-datas = collect_data_files('soundtouchbose')
+try:
+    datas = collect_data_files('soundtouchbose')
+finally:
+    if added_project_root and sys.path and sys.path[0] == str(PROJECT_ROOT):
+        del sys.path[0]
 
 block_cipher = None
 
