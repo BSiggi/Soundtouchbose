@@ -21,6 +21,11 @@ from soundtouchbose.services import Services
 from soundtouchbose.core.station_library import Station
 from soundtouchbose.gui.widgets.preset_button import PresetButton
 
+WRITE_STATUS_TEXT = {
+    False: "\n(nur lokal)",
+    None: "\n(Status unbekannt)",
+}
+
 
 class PresetsTab(QWidget):
     def __init__(self, services: Services) -> None:
@@ -40,6 +45,11 @@ class PresetsTab(QWidget):
         self.bulk_button.clicked.connect(self.apply_cached_to_all)
         top_row.addWidget(self.bulk_button)
         layout.addLayout(top_row)
+        self.help_label = QLabel(
+            "Hinweis: Die Belegung hier sind lokale App-Favoriten. Das Schreiben echter Bose-Presets kann nach SoundTouch-EOL vom Gerät abgelehnt werden."
+        )
+        self.help_label.setWordWrap(True)
+        layout.addWidget(self.help_label)
         grid = QGridLayout()
         self.buttons: dict[int, PresetButton] = {}
         for index in range(1, 7):
@@ -85,11 +95,17 @@ class PresetsTab(QWidget):
             try:
                 self.services.preset_manager.assign_preset(ip_address, preset_number, station)
             except Exception as exc:
+                self.services.diagnostics_service.record_device_error(ip_address, "preset_write", exc)
                 errors.append(f"{ip_address}: {user_error_text(exc)}")
         self.active_station = station
         self.refresh_buttons()
         if errors:
-            QMessageBox.warning(self, "Preset-Fehler", "\n".join(errors))
+            QMessageBox.warning(
+                self,
+                "Bose-Preset konnte nicht geschrieben werden",
+                "Lokaler Favorit wurde gespeichert, aber das Gerät hat den Vorgang abgelehnt oder mit Fehler beantwortet.\n\n"
+                + "\n".join(errors),
+            )
 
     def refresh_buttons(self) -> None:
         ips = self.selected_ips()
@@ -99,7 +115,12 @@ class PresetsTab(QWidget):
             if ips:
                 station_payload = cache.get(ips[0], {}).get(str(preset_number))
                 if station_payload:
-                    label = f"Preset {preset_number}\n{station_payload.get('name', station_payload.get('item_name', 'Unbekannt'))}"
+                    write_status = station_payload.get("device_write_ok")
+                    status = WRITE_STATUS_TEXT.get(write_status, "")
+                    label = (
+                        f"Preset {preset_number}\n"
+                        f"{station_payload.get('name', station_payload.get('item_name', 'Unbekannt'))}{status}"
+                    )
             button.setToolTip("Klicken zum Bearbeiten, Sender aus 'Sender'-Liste hierher ziehen oder Rechtsklick für Aktionen.")
             button.setText(label)
 
@@ -151,6 +172,7 @@ class PresetsTab(QWidget):
                 client.send_key(f"PRESET_{preset_number}", "press")
                 client.send_key(f"PRESET_{preset_number}", "release")
             except Exception as exc:
+                self.services.diagnostics_service.record_device_error(ip_address, "preset_trigger", exc)
                 errors.append(f"{ip_address}: {user_error_text(exc)}")
         if errors:
             QMessageBox.warning(self, "Preset-Test fehlgeschlagen", "\n".join(errors))
@@ -164,8 +186,15 @@ class PresetsTab(QWidget):
         if not station_payload:
             return
         station = Station.from_dict(station_payload)
+        errors = []
         for device in self.services.device_manager.all_devices():
-            self.services.preset_manager.assign_preset(device.ip_address, preset_number, station)
+            try:
+                self.services.preset_manager.assign_preset(device.ip_address, preset_number, station)
+            except Exception as exc:
+                self.services.diagnostics_service.record_device_error(device.ip_address, "preset_write", exc)
+                errors.append(f"{device.ip_address}: {user_error_text(exc)}")
+        if errors:
+            QMessageBox.warning(self, "Bose-Preset konnte nicht geschrieben werden", "\n".join(errors))
         self.refresh_buttons()
 
     def apply_cached_to_all(self) -> None:

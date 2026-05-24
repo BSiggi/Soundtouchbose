@@ -110,6 +110,7 @@ class StationsTab(QWidget):
         try:
             self.services.client_factory(device_ip).select(station)
         except Exception as exc:
+            self.services.diagnostics_service.record_device_error(str(device_ip), "select", exc)
             QMessageBox.warning(self, "Fehler", f"Testwiedergabe fehlgeschlagen:\n{user_error_text(exc)}")
 
     def add_station(self) -> None:

@@ -51,6 +51,18 @@ class SettingsTab(QWidget):
         self.night_volume = QSpinBox()
         self.night_volume.setRange(0, 100)
         self.night_volume.setValue(int(self.settings.get("night_mode_max_volume", 20)))
+        preferred_ips = self.settings.get("preferred_device_ips", [])
+        preferred_ips_entries = []
+        if isinstance(preferred_ips, list):
+            preferred_ips_entries = [str(item).strip() for item in preferred_ips if str(item).strip()]
+        preferred_ips_text = ", ".join(preferred_ips_entries)
+        self.preferred_ips = QLineEdit(preferred_ips_text)
+        self.preferred_ips.setPlaceholderText("z. B. 192.168.100.148, 192.168.100.111")
+        self.eol_hint = QLabel(
+            "Bose SoundTouch EOL-Hinweis: Echtes Überschreiben/Löschen von Geräte-Presets kann vom Gerät abgelehnt werden. "
+            "Die App speichert Favoriten lokal und versucht zusätzlich den Geräteschreibzugriff."
+        )
+        self.eol_hint.setWordWrap(True)
         layout.addRow("Mit Windows starten", self.autostart)
         layout.addRow("Im Tray minimieren", self.minimize_to_tray)
         layout.addRow("Mini-Web-UI aktiv", self.web_enabled)
@@ -60,6 +72,8 @@ class SettingsTab(QWidget):
         layout.addRow("Home Assistant Token", self.ha_token)
         layout.addRow("Nachtmodus aktiv", self.night_mode)
         layout.addRow("Nachtmodus Max-Lautstärke", self.night_volume)
+        layout.addRow("Bevorzugte Geräte-IPs", self.preferred_ips)
+        layout.addRow("Hinweis", self.eol_hint)
         action_row = QHBoxLayout()
         save_button = QPushButton("Speichern")
         save_button.clicked.connect(self.save_settings)
@@ -92,6 +106,7 @@ class SettingsTab(QWidget):
             "home_assistant_token": self.ha_token.text().strip() or "change-me",
             "night_mode_enabled": self.night_mode.isChecked(),
             "night_mode_max_volume": self.night_volume.value(),
+            "preferred_device_ips": [entry.strip() for entry in self.preferred_ips.text().split(",") if entry.strip()],
         }
         self.services.config_store.save_settings(settings)
         sync_autostart(self.autostart.isChecked())

@@ -1,8 +1,8 @@
 # SoundTouchBose
 
-SoundTouchBose ist eine lokale Windows-Desktop-Anwendung zur Verwaltung von Bose SoundTouch-Geräten nach dem Bose-Cloud-Shutdown. Die App findet Geräte im LAN, verwaltet Internetradio-Sender, beschreibt Preset-Tasten 1–6 lokal auf dem Gerät und bietet zusätzlich Zeitpläne, Zonen, Tray-Betrieb, Mini-Web-UI und eine optionale Home-Assistant-Bridge.
+SoundTouchBose ist eine lokale Windows-Desktop-Anwendung zur Verwaltung von Bose SoundTouch-Geräten nach dem Bose-Cloud-Shutdown. Die App findet Geräte im LAN, verwaltet Internetradio-Sender, pflegt lokale App-Favoriten für Preset-Tasten 1–6 (mit optionalem Schreibversuch auf das Gerät) und bietet zusätzlich Zeitpläne, Zonen, Tray-Betrieb, Mini-Web-UI und eine optionale Home-Assistant-Bridge.
 
-SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devices after the Bose cloud shutdown. It discovers devices on the LAN, manages internet radio stations, writes presets 1–6 locally to the speaker, and also includes schedules, zones, tray support, a mini web UI, and an optional Home Assistant bridge.
+SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devices after the Bose cloud shutdown. It discovers devices on the LAN, manages internet radio stations, keeps local app favorites for presets 1–6 (with optional device write attempts), and also includes schedules, zones, tray support, a mini web UI, and an optional Home Assistant bridge.
 
 ## Screenshots / Platzhalter
 
@@ -14,9 +14,9 @@ SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devic
 - Zeroconf/mDNS-Discovery für `_soundtouch._tcp.local.`
 - Manuelles Hinzufügen von Geräten per IP mit `/info`-Validierung
 - 40+ DACH-Radiosender als Startbibliothek, plus Import/Export und eigene Sender
-- Preset-Editor für 6 Tasten pro Gerät, inkl. Drag & Drop und Bulk-Übertragung
+- Favoriten-/Preset-Editor für 6 Tasten pro Gerät, inkl. Drag & Drop und Bulk-Übertragung
 - Preset-Klick-Editor: nicht belegte Presets lassen sich direkt per Klick belegen/bearbeiten/löschen
-- Lokale Preset-Programmierung via `/select` und `/key PRESET_X`
+- Lokale Favoriten mit optionaler Preset-Programmierung via `/select` und `/key PRESET_X`
 - Multi-Room-Zonen mit speicherbaren Gruppen
 - APScheduler-Zeitpläne für Senderstart, Lautstärke und Ausschalten
 - Live-Dashboard mit WebSocket-Triggern, Lautstärke und Transporttasten
@@ -65,6 +65,12 @@ Die Anwendung nutzt ausschließlich lokale, weiterhin verfügbare Schnittstellen
 
 Nicht benötigt werden Bose-Konten, Cloud-Logins oder Spotify-Authentifizierung über Bose-Server.
 
+Wichtige Einschränkung nach EOL:
+
+- Einige Geräte lehnen Preset-/`/select`-Schreibvorgänge mit 4xx/5xx ab, obwohl das Gerät erreichbar ist.
+- Die App speichert deshalb Favoriten immer lokal und zeigt Schreibfehler als Bose-API-Problem statt als Firewall-Problem an.
+- `/now_playing` kann bei einzelnen Geräten zeitweise mit `INVALID_SOURCE` oder HTTP 500 fehlschlagen; die App behandelt das als „Quelle derzeit nicht lesbar“.
+
 ## FAQ / Troubleshooting
 
 ### Gerät wird nicht gefunden
@@ -75,9 +81,15 @@ Nicht benötigt werden Bose-Konten, Cloud-Logins oder Spotify-Authentifizierung 
 
 ### Preset wird nicht geschrieben
 
-- Sicherstellen, dass der Sender kurz gestartet werden kann
-- Prüfen, ob das Gerät im LAN erreichbar ist
-- Bei Bedarf den Sender testweise im Tab **Sender** abspielen
+- Nach SoundTouch-EOL kann Bose das Überschreiben/Löschen echter Geräte-Presets ablehnen.
+- Die App speichert den Eintrag trotzdem als lokalen Favoriten.
+- Bei HTTP 4xx/5xx ist das Gerät oft erreichbar; der Fehler ist dann ein Bose-API-/Gerätestatusproblem, nicht automatisch Firewall.
+
+### Werksreset / neue Geräte-IP
+
+- Ein Werksreset kann Gerätezustand oder IP-Zuordnung ändern, löst aber nicht automatisch EOL-bedingte Preset-Einschränkungen.
+- Nutze **Geräte → Manuell hinzufügen** und hinterlege in **Einstellungen** bevorzugte Geräte-IPs für stabile Wiederverbindung.
+- Wenn möglich im Router eine DHCP-Reservierung pro Bose-Gerät setzen.
 
 ### Web-UI ist nicht erreichbar
 
