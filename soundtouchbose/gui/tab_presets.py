@@ -21,6 +21,11 @@ from soundtouchbose.services import Services
 from soundtouchbose.core.station_library import Station
 from soundtouchbose.gui.widgets.preset_button import PresetButton
 
+WRITE_STATUS_TEXT = {
+    False: "\n(nur lokal)",
+    None: "\n(Status unbekannt)",
+}
+
 
 class PresetsTab(QWidget):
     def __init__(self, services: Services) -> None:
@@ -110,7 +115,8 @@ class PresetsTab(QWidget):
             if ips:
                 station_payload = cache.get(ips[0], {}).get(str(preset_number))
                 if station_payload:
-                    status = "" if station_payload.get("device_write_ok", True) else "\n(nur lokal)"
+                    write_status = station_payload.get("device_write_ok")
+                    status = WRITE_STATUS_TEXT.get(write_status, "")
                     label = (
                         f"Preset {preset_number}\n"
                         f"{station_payload.get('name', station_payload.get('item_name', 'Unbekannt'))}{status}"

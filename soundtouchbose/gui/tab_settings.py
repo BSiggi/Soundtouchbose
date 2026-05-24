@@ -52,7 +52,10 @@ class SettingsTab(QWidget):
         self.night_volume.setRange(0, 100)
         self.night_volume.setValue(int(self.settings.get("night_mode_max_volume", 20)))
         preferred_ips = self.settings.get("preferred_device_ips", [])
-        preferred_ips_text = ", ".join(str(item) for item in preferred_ips if str(item).strip()) if isinstance(preferred_ips, list) else ""
+        preferred_ips_entries = []
+        if isinstance(preferred_ips, list):
+            preferred_ips_entries = [str(item).strip() for item in preferred_ips if str(item).strip()]
+        preferred_ips_text = ", ".join(preferred_ips_entries)
         self.preferred_ips = QLineEdit(preferred_ips_text)
         self.preferred_ips.setPlaceholderText("z. B. 192.168.100.148, 192.168.100.111")
         self.eol_hint = QLabel(

@@ -26,7 +26,15 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SoundTouchRequestError(RuntimeError):
-    """Request error with operation metadata for UI and diagnostics."""
+    """Request error with operation metadata for UI and diagnostics.
+
+    Attributes:
+        ip_address: Target device IP.
+        endpoint: HTTP endpoint path (for example ``/now_playing``).
+        operation: Logical operation name used in UI/diagnostics (for example ``preset_write``).
+        kind: Error category (``network``, ``timeout``, ``http_status``).
+        status_code: HTTP status code if available.
+    """
 
     def __init__(
         self,
@@ -74,9 +82,12 @@ class SoundTouchClient:
         for attempt in range(1, self.retries + 1):
             try:
                 response = self.session.request(method, url, data=data, headers=headers, timeout=self.timeout)
-                response.raise_for_status()
+                # SoundTouch devices in the field return UTF-8 XML but frequently omit
+                # charset or report latin-1. Forcing UTF-8 avoids mojibake in names like
+                # "BÜRO" and matches real device payload bytes.
                 if not response.encoding or response.encoding.lower() in {"iso-8859-1", "latin-1"}:
                     response.encoding = "utf-8"
+                response.raise_for_status()
                 return response
             except requests.HTTPError as exc:  # pragma: no cover - thin wrapper
                 last_error = exc

@@ -8,7 +8,8 @@ from typing import Callable
 from soundtouchbose.api.client import SoundTouchClient
 from soundtouchbose.api.discovery import discover_once
 from soundtouchbose.core.config import ConfigStore
-from soundtouchbose.core.error_texts import error_details, is_valid_source, source_display_text, user_error_text
+from soundtouchbose.core.error_texts import condition_error_details, error_details, is_valid_source, source_display_text, user_error_text
+from soundtouchbose.core.text_utils import repair_mojibake
 
 
 @dataclass(slots=True)
@@ -68,21 +69,10 @@ class DeviceManager:
     def all_devices(self) -> list[Device]:
         return sorted(self.devices.values(), key=lambda device: device.name.lower())
 
-    @staticmethod
-    def _repair_mojibake(value: str) -> str:
-        text = str(value or "")
-        if "Ã" not in text and "Â" not in text:
-            return text
-        try:
-            repaired = text.encode("latin-1").decode("utf-8")
-        except UnicodeError:
-            return text
-        return repaired if repaired else text
-
     def add_manual_device(self, ip_address: str) -> Device:
         client = self.client_factory(ip_address)
         info = client.get_info()
-        name = self._repair_mojibake(str(info.get("name") or ip_address))
+        name = repair_mojibake(str(info.get("name") or ip_address))
         source_raw = ""
         source_valid = False
         source = "Quelle derzeit nicht lesbar"
@@ -95,12 +85,12 @@ class DeviceManager:
             source = source_display_text(source_raw, now_playing)
             error_text = "" if source_valid else "Gerät ist erreichbar, aber die Quelle ist derzeit nicht lesbar (INVALID_SOURCE)."
             if not source_valid:
-                last_error = {
-                    "operation": "now_playing",
-                    "endpoint": "/now_playing",
-                    "category": "invalid_source",
-                    "message": "Gerät meldet INVALID_SOURCE",
-                }
+                last_error = condition_error_details(
+                    operation="now_playing",
+                    category="invalid_source",
+                    message="Gerät meldet INVALID_SOURCE",
+                    endpoint="/now_playing",
+                )
         except Exception as exc:
             details = error_details(exc, operation="now_playing")
             details["endpoint"] = details.get("endpoint") or "/now_playing"
@@ -157,7 +147,7 @@ class DeviceManager:
                 self.devices.setdefault(
                     discovered.ip_address,
                     Device(
-                        name=self._repair_mojibake(discovered.name),
+                        name=repair_mojibake(discovered.name),
                         ip_address=discovered.ip_address,
                         online=False,
                         reachable=False,

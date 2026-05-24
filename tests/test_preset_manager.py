@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from soundtouchbose.core.config import ConfigStore
 from soundtouchbose.core.preset_manager import PresetManager
 from soundtouchbose.core.station_library import Station
@@ -64,10 +66,8 @@ def test_assign_preset_keeps_local_favorite_when_device_write_fails(tmp_path: Pa
         location="/v1/playback/station/s24875",
     )
 
-    try:
+    with pytest.raises(RuntimeError):
         manager.assign_preset("192.168.1.2", 1, station)
-    except RuntimeError:
-        pass
 
     payload = manager.get_cached_presets("192.168.1.2")["1"]
     assert payload["name"] == "Deutschlandfunk"

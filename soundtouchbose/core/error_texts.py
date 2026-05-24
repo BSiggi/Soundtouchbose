@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from collections.abc import Mapping
+from datetime import datetime, timezone
 
 SOURCE_TEXTS: dict[str, str] = {
     "invalid_source": "Keine gültige Quelle verfügbar",
@@ -75,10 +75,28 @@ def error_details(exc: Exception, operation: str | None = None) -> dict[str, obj
         else:
             category = "unknown"
     return {
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "captured_at_utc": datetime.now(timezone.utc).isoformat(),
         "operation": op_name or None,
         "endpoint": endpoint or None,
         "http_status": int(status_code) if isinstance(status_code, int) else None,
         "category": category,
         "message": raw or "Unbekannter Fehler",
+    }
+
+
+def condition_error_details(
+    *,
+    operation: str,
+    category: str,
+    message: str,
+    endpoint: str | None = None,
+    http_status: int | None = None,
+) -> dict[str, object]:
+    return {
+        "captured_at_utc": datetime.now(timezone.utc).isoformat(),
+        "operation": operation,
+        "endpoint": endpoint,
+        "http_status": http_status,
+        "category": category,
+        "message": message,
     }
