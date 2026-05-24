@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from soundtouchbose.core.error_texts import user_error_text
 from soundtouchbose.services import Services
 from soundtouchbose.gui.widgets.station_list_item import StationListItem
 
@@ -81,8 +82,15 @@ class StationsTab(QWidget):
         categories = ["Alle"] + self.services.station_library.categories()
         self.category_combo.clear()
         self.category_combo.addItems(categories)
+        current_data = self.device_combo.currentData()
         self.device_combo.clear()
-        self.device_combo.addItems([device.ip_address for device in self.services.device_manager.all_devices()])
+        for device in self.services.device_manager.all_devices():
+            label = f"{device.name} ({device.ip_address})" if device.name else device.ip_address
+            self.device_combo.addItem(label, device.ip_address)
+        if current_data:
+            index = self.device_combo.findData(current_data)
+            if index >= 0:
+                self.device_combo.setCurrentIndex(index)
 
     def refresh_list(self) -> None:
         category = self.category_combo.currentText()
@@ -96,13 +104,13 @@ class StationsTab(QWidget):
 
     def test_station(self) -> None:
         station = self.selected_station()
-        device_ip = self.device_combo.currentText()
+        device_ip = self.device_combo.currentData()
         if not station or not device_ip:
             return
         try:
             self.services.client_factory(device_ip).select(station)
         except Exception as exc:
-            QMessageBox.warning(self, "Fehler", f"Testwiedergabe fehlgeschlagen:\n{exc}")
+            QMessageBox.warning(self, "Fehler", f"Testwiedergabe fehlgeschlagen:\n{user_error_text(exc)}")
 
     def add_station(self) -> None:
         name, ok = QInputDialog.getText(self, "Sendername", "Name:")

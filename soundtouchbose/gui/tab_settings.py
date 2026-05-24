@@ -12,10 +12,13 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QCheckBox,
+    QLabel,
     QSpinBox,
     QWidget,
 )
 
+from soundtouchbose import __version__
+from soundtouchbose.core.error_texts import user_error_text
 from soundtouchbose.runtime import sync_autostart
 from soundtouchbose.services import Services
 
@@ -26,6 +29,8 @@ class SettingsTab(QWidget):
         self.services = services
         self.settings = self.services.config_store.load_settings()
         layout = QFormLayout(self)
+        self.version_label = QLabel(self.settings.get("installed_version", __version__))
+        layout.addRow("Version", self.version_label)
         self.autostart = QCheckBox()
         self.autostart.setChecked(self.settings.get("autostart", False))
         self.minimize_to_tray = QCheckBox()
@@ -62,9 +67,18 @@ class SettingsTab(QWidget):
         export_button.clicked.connect(self.export_backup)
         restore_button = QPushButton("Backup importieren")
         restore_button.clicked.connect(self.import_backup)
+        update_button = QPushButton("Update anwenden …")
+        update_button.clicked.connect(self.apply_update)
+        diagnostics_button = QPushButton("Diagnose exportieren")
+        diagnostics_button.clicked.connect(self.export_diagnostics)
+        cleanup_button = QPushButton("Cleanup ausführen")
+        cleanup_button.clicked.connect(self.run_cleanup)
         action_row.addWidget(save_button)
         action_row.addWidget(export_button)
         action_row.addWidget(restore_button)
+        action_row.addWidget(update_button)
+        action_row.addWidget(diagnostics_button)
+        action_row.addWidget(cleanup_button)
         layout.addRow(action_row)
 
     def save_settings(self) -> None:
@@ -93,3 +107,52 @@ class SettingsTab(QWidget):
         if path:
             self.services.config_store.restore_from_zip(Path(path))
             QMessageBox.information(self, "Importiert", "Backup wurde wiederhergestellt.")
+
+    def apply_update(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(self, "Update-Datei auswählen", "", "ZIP (*.zip)")
+        if not path:
+            return
+        try:
+            result = self.services.update_manager.apply_update_package(Path(path))
+        except Exception as exc:
+            QMessageBox.warning(self, "Update fehlgeschlagen", user_error_text(exc))
+            return
+        self.settings = self.services.config_store.load_settings()
+        self.version_label.setText(result.package_version or self.settings.get("installed_version", __version__))
+        QMessageBox.information(
+            self,
+            "Update angewendet",
+            f"Backup erstellt: {result.backup_path}\nAktualisierte Dateien: {len(result.applied_files)}",
+        )
+
+    def export_diagnostics(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Diagnose exportieren",
+            "soundtouchbose-diagnose.zip",
+            "ZIP (*.zip)",
+        )
+        if not path:
+            return
+        try:
+            report_path = self.services.diagnostics_service.export(Path(path))
+        except Exception as exc:
+            QMessageBox.warning(self, "Diagnose fehlgeschlagen", user_error_text(exc))
+            return
+        QMessageBox.information(self, "Diagnose exportiert", f"Datei erstellt:\n{report_path}")
+
+    def run_cleanup(self) -> None:
+        if QMessageBox.question(
+            self,
+            "Cleanup ausführen",
+            "Autostart entfernen, alte Backups bereinigen und bekannte Dienste stoppen?",
+        ) != QMessageBox.StandardButton.Yes:
+            return
+        result = self.services.cleanup_service.run_cleanup()
+        services = result.get("service_status") or {}
+        QMessageBox.information(
+            self,
+            "Cleanup abgeschlossen",
+            f"Entfernte Backups: {len(result.get('removed_backups', []))}\n"
+            f"Dienststatus: {services or 'Keine Dienste gefunden'}",
+        )

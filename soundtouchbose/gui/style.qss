@@ -1,35 +1,65 @@
 QWidget {
-    background-color: #1f2430;
-    color: #e6e9ef;
-    font-size: 13px;
+    background-color: #161b26;
+    color: #f2f5fb;
+    font-size: 14px;
 }
 QLineEdit, QListWidget, QTableWidget, QComboBox, QTextEdit, QPlainTextEdit, QSpinBox, QTimeEdit {
-    background-color: #2b3245;
-    border: 1px solid #424b63;
+    background-color: #222a3b;
+    border: 1px solid #4c5a7a;
     border-radius: 6px;
     padding: 6px;
 }
 QPushButton {
-    background-color: #3564ff;
+    background-color: #2f7cf4;
     border: none;
     border-radius: 8px;
     padding: 8px 12px;
     font-weight: 600;
+    color: #ffffff;
 }
 QPushButton:hover {
-    background-color: #4e7bff;
+    background-color: #4a90ff;
 }
 QTabWidget::pane {
-    border: 1px solid #424b63;
+    border: 1px solid #4c5a7a;
     border-radius: 8px;
+    top: -1px;
+}
+QTabBar::tab {
+    background: #202839;
+    border: 1px solid #4c5a7a;
+    color: #dde5f8;
+    padding: 8px 14px;
+    margin-right: 4px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+QTabBar::tab:selected {
+    background: #2f7cf4;
+    color: #ffffff;
+    font-weight: 700;
+}
+QTabBar::tab:hover:!selected {
+    background: #2a3349;
 }
 QHeaderView::section {
-    background-color: #2b3245;
+    background-color: #222a3b;
     padding: 6px;
     border: none;
 }
 QFrame[card="true"] {
-    background-color: #2b3245;
-    border: 1px solid #424b63;
+    background-color: #222a3b;
+    border: 1px solid #4c5a7a;
     border-radius: 10px;
+}
+QPushButton[presetButton="true"] {
+    background-color: #27334b;
+    border: 1px solid #5f6f95;
+    border-radius: 12px;
+    min-height: 120px;
+    text-align: left;
+    padding: 12px;
+}
+QPushButton[presetButton="true"]:hover {
+    background-color: #32415e;
 }

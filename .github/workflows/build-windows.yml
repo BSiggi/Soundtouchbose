@@ -12,10 +12,10 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install dependencies
@@ -25,7 +25,7 @@ jobs:
       - name: Build executable
         run: pyinstaller installer/soundtouchbose.spec
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: SoundTouchBose.exe
           path: dist/SoundTouchBose.exe

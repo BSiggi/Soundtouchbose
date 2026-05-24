@@ -14,6 +14,7 @@ class PresetButton(QPushButton):
         self.preset_number = preset_number
         self.setAcceptDrops(True)
         self.setMinimumHeight(120)
+        self.setProperty("presetButton", True)
 
     def dragEnterEvent(self, event) -> None:  # noqa: N802
         if event.mimeData().hasText():
