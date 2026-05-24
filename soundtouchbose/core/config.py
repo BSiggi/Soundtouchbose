@@ -32,6 +32,7 @@ class ConfigStore:
         self.base_dir = base_dir or self.default_base_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.logs_dir.mkdir(parents=True, exist_ok=True)
+        self.backups_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def default_base_dir() -> Path:
@@ -46,6 +47,10 @@ class ConfigStore:
     @property
     def logs_dir(self) -> Path:
         return self.base_dir / "logs"
+
+    @property
+    def backups_dir(self) -> Path:
+        return self.base_dir / "backups"
 
     def path_for(self, filename: str) -> Path:
         return self.base_dir / filename

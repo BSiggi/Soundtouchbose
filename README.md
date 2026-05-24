@@ -15,11 +15,15 @@ SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devic
 - Manuelles Hinzufügen von Geräten per IP mit `/info`-Validierung
 - 40+ DACH-Radiosender als Startbibliothek, plus Import/Export und eigene Sender
 - Preset-Editor für 6 Tasten pro Gerät, inkl. Drag & Drop und Bulk-Übertragung
+- Preset-Klick-Editor: nicht belegte Presets lassen sich direkt per Klick belegen/bearbeiten/löschen
 - Lokale Preset-Programmierung via `/select` und `/key PRESET_X`
 - Multi-Room-Zonen mit speicherbaren Gruppen
 - APScheduler-Zeitpläne für Senderstart, Lautstärke und Ausschalten
 - Live-Dashboard mit WebSocket-Triggern, Lautstärke und Transporttasten
 - Tray-Icon, Windows-Autostart-Skript, Backup/Restore
+- In-App-Update (ZIP-Paket) mit automatischem Pre-Update-Backup und Update-Log
+- Diagnose-Export als ZIP (`report.json` + Log-Auszüge) für Supportfälle
+- Wartungs-/Cleanup-Hilfe für Autostart, Backups und optionale Dienst-Stopps
 - Mini-Web-UI auf Port 8765 und Home-Assistant-Bridge auf Port 8766 (localhost, Token wird automatisch erzeugt)
 - Logging nach `%APPDATA%/SoundTouchBose/logs/app.log`
 
@@ -44,6 +48,12 @@ python -m soundtouchbose
 2. Tab **Sender** öffnen und aus der DACH-Bibliothek wählen oder eigene TuneIn-IDs/Stream-URLs eintragen.
 3. Gewünschten Sender per Drag & Drop auf einen Preset-Button im Tab **Presets** ziehen.
 4. Optional Zonen, Zeitpläne, Web-UI oder Home-Assistant-Bridge aktivieren.
+
+## Update und Diagnose
+
+- **Einstellungen → Update anwenden …**: ZIP-Update auswählen, Backup wird automatisch erstellt, Änderungen in `logs/update.log` protokolliert.
+- **Einstellungen → Diagnose exportieren**: erzeugt ein ZIP mit Versions-/OS-Infos, Gerätestatus, Netz-Checks und relevanten Logs.
+- **Einstellungen → Cleanup ausführen**: entfernt Autostart, bereinigt alte Backups und versucht bekannte Windows-Dienste sauber zu stoppen.
 
 ## Bose-Cloud-Shutdown
 

@@ -8,6 +8,7 @@ from typing import Callable
 from soundtouchbose.api.client import SoundTouchClient
 from soundtouchbose.api.discovery import discover_once
 from soundtouchbose.core.config import ConfigStore
+from soundtouchbose.core.error_texts import is_valid_source, source_display_text, user_error_text
 
 
 @dataclass(slots=True)
@@ -19,6 +20,11 @@ class Device:
     firmware: str = ""
     online: bool = False
     source: str = ""
+    source_raw: str = ""
+    reachable: bool = False
+    service_available: bool = False
+    source_valid: bool = False
+    error_text: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -33,6 +39,11 @@ class Device:
             firmware=str(payload.get("firmware", "")),
             online=bool(payload.get("online", False)),
             source=str(payload.get("source", "")),
+            source_raw=str(payload.get("source_raw", "")),
+            reachable=bool(payload.get("reachable", payload.get("online", False))),
+            service_available=bool(payload.get("service_available", payload.get("online", False))),
+            source_valid=bool(payload.get("source_valid", True)),
+            error_text=str(payload.get("error_text", "")),
         )
 
 
@@ -59,6 +70,8 @@ class DeviceManager:
         client = self.client_factory(ip_address)
         info = client.get_info()
         now_playing = client.get_now_playing()
+        source_raw = str(now_playing.get("source", ""))
+        source_valid = is_valid_source(source_raw)
         device = Device(
             name=info.get("name") or ip_address,
             ip_address=ip_address,
@@ -66,7 +79,12 @@ class DeviceManager:
             model=info.get("type", ""),
             firmware=info.get("software_version", ""),
             online=True,
-            source=now_playing.get("item_name") or now_playing.get("station_name") or now_playing.get("source", ""),
+            source=source_display_text(source_raw, now_playing),
+            source_raw=source_raw,
+            reachable=True,
+            service_available=True,
+            source_valid=source_valid,
+            error_text="" if source_valid else "Quelle am Gerät derzeit ungültig oder unbekannt.",
         )
         self.devices[ip_address] = device
         self.save()
@@ -82,9 +100,13 @@ class DeviceManager:
         try:
             device = self.add_manual_device(ip_address)
             device.online = True
-        except Exception:
+        except Exception as exc:
             device = self.devices[ip_address]
             device.online = False
+            device.reachable = False
+            device.service_available = False
+            device.source_valid = False
+            device.error_text = user_error_text(exc)
             self.save()
         return device
 
@@ -95,7 +117,15 @@ class DeviceManager:
             except Exception:
                 self.devices.setdefault(
                     discovered.ip_address,
-                    Device(name=discovered.name, ip_address=discovered.ip_address, online=False),
+                    Device(
+                        name=discovered.name,
+                        ip_address=discovered.ip_address,
+                        online=False,
+                        reachable=False,
+                        service_available=False,
+                        source_valid=False,
+                        error_text="Gerät gefunden, Dienststatus aktuell nicht abrufbar.",
+                    ),
                 )
         self.save()
         return self.all_devices()

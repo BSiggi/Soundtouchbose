@@ -31,8 +31,10 @@ class DevicesTab(QWidget):
         self.remove_button.clicked.connect(self.remove_selected)
         for button in (self.scan_button, self.add_button, self.remove_button):
             button_row.addWidget(button)
-        self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["Name", "IP", "MAC", "Modell", "Firmware", "Quelle"])
+        self.table = QTableWidget(0, 10)
+        self.table.setHorizontalHeaderLabels(
+            ["Name", "IP", "MAC", "Modell", "Firmware", "Quelle", "Rohquelle", "Erreichbar", "Dienst", "Status"]
+        )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addLayout(button_row)
         layout.addWidget(self.table)
@@ -42,7 +44,18 @@ class DevicesTab(QWidget):
         devices = self.services.device_manager.all_devices()
         self.table.setRowCount(len(devices))
         for row, device in enumerate(devices):
-            values = [device.name, device.ip_address, device.mac_address, device.model, device.firmware, device.source]
+            values = [
+                device.name,
+                device.ip_address,
+                device.mac_address,
+                device.model,
+                device.firmware,
+                device.source,
+                device.source_raw,
+                "Ja" if device.reachable else "Nein",
+                "Verfügbar" if device.service_available else "Nicht verfügbar",
+                device.error_text or ("OK" if device.source_valid else "Quelle prüfen"),
+            ]
             for column, value in enumerate(values):
                 self.table.setItem(row, column, QTableWidgetItem(str(value)))
 

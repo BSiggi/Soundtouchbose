@@ -6,6 +6,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QScrollArea, QVBoxLayout, QWidget
 
 from soundtouchbose.api.websocket_client import SoundTouchWebSocketClient
+from soundtouchbose.core.error_texts import source_display_text
 from soundtouchbose.services import Services
 from soundtouchbose.gui.widgets.device_card import DeviceCard
 
@@ -40,7 +41,7 @@ class DashboardTab(QWidget):
                 self.container_layout.addWidget(card)
             try:
                 snapshot = self.services.client_factory(device.ip_address).get_now_playing()
-                card.update_state(online=True, source=snapshot.get("item_name") or snapshot.get("station_name") or snapshot.get("source", ""))
+                card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
                 if device.ip_address not in self.websocket_clients:
                     self.websocket_clients[device.ip_address] = SoundTouchWebSocketClient(device.ip_address, lambda _msg, ip=device.ip_address: self.refresh_single(ip))
                     self.websocket_clients[device.ip_address].start()
@@ -57,7 +58,7 @@ class DashboardTab(QWidget):
             return
         try:
             snapshot = self.services.client_factory(ip_address).get_now_playing()
-            card.update_state(online=True, source=snapshot.get("item_name") or snapshot.get("station_name") or snapshot.get("source", ""))
+            card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
         except Exception:
             card.update_state(online=False, source="")
 
