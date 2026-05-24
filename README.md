@@ -27,7 +27,7 @@ SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devic
 
 ### Empfohlen: Windows `.exe` aus GitHub Actions
 
-Wenn dein Pull Request bereits **"successfully merged and closed"** ist:
+Wenn dein Pull Request bereits **erfolgreich gemerged und geschlossen** ist:
 
 1. Repository öffnen → **Actions** → Workflow **Build Windows**.
 2. Den neuesten Lauf auf `main` öffnen.
