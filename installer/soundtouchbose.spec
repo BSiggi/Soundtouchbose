@@ -1,13 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import sys
 from PyInstaller.utils.hooks import collect_data_files
+
+# SPECPATH is the directory containing this spec file (installer/).
+# The project root is one level up.
+project_root = os.path.abspath(os.path.join(SPECPATH, '..'))
+sys.path.insert(0, project_root)
 
 datas = collect_data_files('soundtouchbose')
 
 block_cipher = None
 
 a = Analysis(
-    ['soundtouchbose/__main__.py'],
-    pathex=[],
+    [os.path.join(project_root, 'soundtouchbose', '__main__.py')],
+    pathex=[project_root],
     binaries=[],
     datas=datas,
     hiddenimports=[],
@@ -36,5 +43,5 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
-    icon='soundtouchbose/resources/icon.ico',
+    icon=os.path.join(project_root, 'soundtouchbose', 'resources', 'icon.ico'),
 )
