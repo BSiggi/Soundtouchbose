@@ -1,0 +1,35 @@
+QWidget {
+    background-color: #1f2430;
+    color: #e6e9ef;
+    font-size: 13px;
+}
+QLineEdit, QListWidget, QTableWidget, QComboBox, QTextEdit, QPlainTextEdit, QSpinBox, QTimeEdit {
+    background-color: #2b3245;
+    border: 1px solid #424b63;
+    border-radius: 6px;
+    padding: 6px;
+}
+QPushButton {
+    background-color: #3564ff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background-color: #4e7bff;
+}
+QTabWidget::pane {
+    border: 1px solid #424b63;
+    border-radius: 8px;
+}
+QHeaderView::section {
+    background-color: #2b3245;
+    padding: 6px;
+    border: none;
+}
+QFrame[card="true"] {
+    background-color: #2b3245;
+    border: 1px solid #424b63;
+    border-radius: 10px;
+}
