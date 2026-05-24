@@ -136,7 +136,7 @@ class PresetsTab(QWidget):
         entries = [f"{station.name} ({station.category})" for station in stations]
         selected_label, ok = QInputDialog.getItem(
             self,
-            f"Preset {preset_number} {'(Bridge-Regel)' if self.bridge_enabled() else 'bearbeiten'}",
+            f"Preset {preset_number} bearbeiten{' (Bridge-Regel)' if self.bridge_enabled() else ''}",
             "Sender auswählen:",
             entries,
             0,
@@ -208,9 +208,7 @@ class PresetsTab(QWidget):
         device_ips = [device.ip_address for device in self.services.device_manager.all_devices()]
         try:
             if self.bridge_enabled():
-                for ip_address in device_ips:
-                    for preset_number, station in assignments.items():
-                        self.services.preset_manager.assign_bridge_rule(ip_address, preset_number, station)
+                self.services.preset_manager.apply_bridge_rules_to_all(device_ips, assignments)
             else:
                 self.services.preset_manager.apply_to_all(device_ips, assignments)
         except Exception as exc:

@@ -57,7 +57,7 @@ class SettingsTab(QWidget):
             "Workaround: Preset-Tasten am Gerät werden nur als Trigger erkannt. "
             "Die App startet dann den hier zugeordneten Sender auf demselben Gerät, "
             "ohne Bose-Geräte-Presets umzuschreiben. "
-            "Die Erkennung erfolgt indirekt über lokale /now_playing-/presets-Daten."
+            "Die Erkennung erfolgt mit kurzer lokaler Abfrage und kann daher leicht verzögert sein."
         )
         self.preset_bridge_hint.setWordWrap(True)
         layout.addRow("Mit Windows starten", self.autostart)

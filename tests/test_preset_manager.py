@@ -18,6 +18,12 @@ class FakeClient:
         return self._presets
 
 
+class FailingPresetClient(FakeClient):
+    def set_preset(self, preset_number, station):
+        self.assigned.append((preset_number, station.identifier))
+        return False
+
+
 def test_assign_preset_updates_cache(tmp_path: Path) -> None:
     fake_client = FakeClient()
     manager = PresetManager(ConfigStore(tmp_path), client_factory=lambda _ip: fake_client)
@@ -63,3 +69,20 @@ def test_assign_bridge_rule_only_updates_cache(tmp_path: Path) -> None:
 
     assert fake_client.assigned == []
     assert manager.get_cached_presets("192.168.1.99")["2"]["location"] == "https://example.test/stream.mp3"
+
+
+def test_assign_preset_does_not_cache_on_failed_device_write(tmp_path: Path) -> None:
+    fake_client = FailingPresetClient()
+    manager = PresetManager(ConfigStore(tmp_path), client_factory=lambda _ip: fake_client)
+    station = Station(
+        identifier="failing",
+        name="Failure",
+        category="Custom",
+        source="TUNEIN",
+        location="/v1/playback/station/failing",
+    )
+
+    result = manager.assign_preset("192.168.1.55", 3, station)
+
+    assert result is False
+    assert manager.get_cached_presets("192.168.1.55") == {}

@@ -61,6 +61,7 @@ def test_preset_bridge_detects_trigger_and_starts_mapped_station(tmp_path: Path)
     )
 
     service._poll_device(ip_address)
+    assert fake_client.selected == ["bridge-station"]
     service._poll_device(ip_address)
 
     assert fake_client.selected == ["bridge-station"]
@@ -91,6 +92,22 @@ def test_preset_bridge_records_trigger_without_rule(tmp_path: Path) -> None:
 
     assert fake_client.selected == []
     assert service.snapshot()["events"][-1]["detail"] == "no_rule"
+
+
+def test_preset_bridge_snapshot_uses_configured_poll_interval(tmp_path: Path) -> None:
+    config_store = ConfigStore(tmp_path / "config")
+    config_store.save_settings({"preset_bridge_poll_interval_seconds": 1.5})
+    station_library = StationLibrary(config_store)
+    preset_manager = PresetManager(config_store, client_factory=lambda _ip: None)
+    service = PresetBridgeService(
+        config_store=config_store,
+        device_manager=FakeDeviceManager("192.168.100.150"),
+        preset_manager=preset_manager,
+        station_library=station_library,
+        client_factory=lambda _ip: FakeClient([], {"content_item": {}}),
+    )
+
+    assert service.snapshot()["poll_interval_seconds"] == 1.5
 
 
 def test_match_preset_number_requires_source_and_location() -> None:

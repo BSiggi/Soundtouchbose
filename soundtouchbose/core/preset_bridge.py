@@ -56,9 +56,10 @@ class PresetBridgeService:
 
     def snapshot(self) -> dict[str, Any]:
         settings = self.config_store.load_settings()
+        poll_interval = self._poll_interval_from_settings(settings)
         return {
             "enabled": bool(settings.get("preset_bridge_enabled", False)),
-            "poll_interval_seconds": self.poll_interval_seconds,
+            "poll_interval_seconds": poll_interval,
             "events": list(self._events),
         }
 
@@ -86,9 +87,10 @@ class PresetBridgeService:
         while not self._stop_event.is_set():
             settings = self.config_store.load_settings()
             enabled = bool(settings.get("preset_bridge_enabled", False))
+            poll_interval = self._poll_interval_from_settings(settings)
             if not enabled:
                 self._last_signature.clear()
-                self._stop_event.wait(self.poll_interval_seconds)
+                self._stop_event.wait(min(1.0, poll_interval))
                 continue
             for device in self.device_manager.all_devices():
                 if not device.ip_address:
@@ -97,7 +99,7 @@ class PresetBridgeService:
                     self._poll_device(device.ip_address)
                 except Exception as exc:
                     LOGGER.warning("Preset bridge polling failed for %s: %s", device.ip_address, exc)
-            self._stop_event.wait(self.poll_interval_seconds)
+            self._stop_event.wait(poll_interval)
 
     def _poll_device(self, ip_address: str) -> None:
         client = self.client_factory(ip_address)
@@ -178,3 +180,11 @@ class PresetBridgeService:
                 except (TypeError, ValueError):
                     return None
         return None
+
+    def _poll_interval_from_settings(self, settings: dict[str, Any]) -> float:
+        raw_value = settings.get("preset_bridge_poll_interval_seconds", self.poll_interval_seconds)
+        try:
+            parsed = float(raw_value)
+        except (TypeError, ValueError):
+            return self.poll_interval_seconds
+        return max(0.5, min(30.0, parsed))
