@@ -12,6 +12,7 @@ from soundtouchbose.core.config import ConfigStore
 from soundtouchbose.core.preset_manager import PresetManager
 
 LOGGER = logging.getLogger(__name__)
+HARDWARE_PRESET_CACHE_TTL_SECONDS = 300
 
 
 @dataclass(slots=True)
@@ -115,7 +116,7 @@ class PresetBridgeController:
 
     def _hardware_preset_signatures(self, ip_address: str) -> dict[int, _PresetSignature]:
         last_loaded = self._hardware_presets_loaded_at.get(ip_address, 0.0)
-        if ip_address in self._hardware_presets and time.time() - last_loaded < 300:
+        if ip_address in self._hardware_presets and time.time() - last_loaded < HARDWARE_PRESET_CACHE_TTL_SECONDS:
             return self._hardware_presets[ip_address]
         try:
             presets = self.client_factory(ip_address).get_presets()

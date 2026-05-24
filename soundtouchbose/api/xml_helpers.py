@@ -9,7 +9,7 @@ from xml.etree import ElementTree as ET
 from soundtouchbose.core.station_library import Station
 
 
-def _parse_int(value: object) -> int | None:
+def _try_parse_int(value: object) -> int | None:
     if value is None:
         return None
     text = str(value).strip()
@@ -62,9 +62,9 @@ def parse_info_xml(xml_text: str) -> dict[str, Any]:
 def parse_now_playing_xml(xml_text: str) -> dict[str, Any]:
     root = ET.fromstring(xml_text)
     content = root.find("ContentItem")
-    preset_id = _parse_int(root.attrib.get("presetID"))
+    preset_id = _try_parse_int(root.attrib.get("presetID"))
     if preset_id is None and content is not None:
-        preset_id = _parse_int(content.attrib.get("presetID"))
+        preset_id = _try_parse_int(content.attrib.get("presetID"))
     return {
         "source": root.attrib.get("source", ""),
         "preset_id": preset_id,
