@@ -11,6 +11,8 @@ def test_settings_merge_defaults(tmp_path: Path) -> None:
 
     assert settings["web_ui_port"] == 9999
     assert settings["home_assistant_port"] == DEFAULT_SETTINGS["home_assistant_port"]
+    assert settings["preset_bridge_enabled"] is False
+    assert settings["preset_bridge_poll_interval_seconds"] == DEFAULT_SETTINGS["preset_bridge_poll_interval_seconds"]
 
 
 def test_backup_and_restore_json_files(tmp_path: Path) -> None:

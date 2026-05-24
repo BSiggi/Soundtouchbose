@@ -72,6 +72,7 @@ class DiagnosticsService:
             "network_checks": network_checks,
             "firewall_hints": firewall_hints,
             "recent_errors": [line for line in self._tail_log().splitlines() if "ERROR" in line or "WARNING" in line][-50:],
+            "preset_bridge": self.services.preset_bridge_service.snapshot() if getattr(self.services, "preset_bridge_service", None) else {},
         }
         return report
 

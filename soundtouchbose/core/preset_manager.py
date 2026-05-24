@@ -25,10 +25,17 @@ class PresetManager:
     def assign_preset(self, ip_address: str, preset_number: int, station: Station) -> bool:
         client = self.client_factory(ip_address)
         ok = client.set_preset(preset_number, station)
+        if ok:
+            self._save_cached_station(ip_address, preset_number, station)
+        return ok
+
+    def assign_bridge_rule(self, ip_address: str, preset_number: int, station: Station) -> None:
+        self._save_cached_station(ip_address, preset_number, station)
+
+    def _save_cached_station(self, ip_address: str, preset_number: int, station: Station) -> None:
         cache = self.load_cache()
         cache.setdefault(ip_address, {})[str(preset_number)] = station.to_dict()
         self.save_cache(cache)
-        return ok
 
     def sync_presets_from_device(self, ip_address: str) -> list[dict[str, object]]:
         client = self.client_factory(ip_address)
@@ -49,3 +56,8 @@ class PresetManager:
                 if self.assign_preset(ip_address, preset_number, station):
                     applied[ip_address].append(preset_number)
         return applied
+
+    def apply_bridge_rules_to_all(self, ip_addresses: list[str], assignments: dict[int, Station]) -> None:
+        for ip_address in ip_addresses:
+            for preset_number, station in assignments.items():
+                self.assign_bridge_rule(ip_address, preset_number, station)
