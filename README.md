@@ -20,7 +20,7 @@ SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devic
 - APScheduler-Zeitpläne für Senderstart, Lautstärke und Ausschalten
 - Live-Dashboard mit WebSocket-Triggern, Lautstärke und Transporttasten
 - Tray-Icon, Windows-Autostart-Skript, Backup/Restore
-- Mini-Web-UI auf Port 8765 und Home-Assistant-Bridge auf Port 8766 (localhost)
+- Mini-Web-UI auf Port 8765 und Home-Assistant-Bridge auf Port 8766 (localhost, Token wird automatisch erzeugt)
 - Logging nach `%APPDATA%/SoundTouchBose/logs/app.log`
 
 ## Installation

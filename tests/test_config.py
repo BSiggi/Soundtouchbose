@@ -25,3 +25,13 @@ def test_backup_and_restore_json_files(tmp_path: Path) -> None:
 
     assert store.load_json("devices.json", []) == [{"ip_address": "1.2.3.4"}]
     assert store.load_json("stations.json", []) == [{"identifier": "s1"}]
+
+
+def test_settings_generate_secure_home_assistant_token(tmp_path: Path) -> None:
+    store = ConfigStore(tmp_path)
+
+    settings = store.load_settings()
+
+    assert settings["home_assistant_token"]
+    assert settings["home_assistant_token"] != DEFAULT_SETTINGS["home_assistant_token"]
+    assert store.load_json("settings.json", {})["home_assistant_token"] == settings["home_assistant_token"]

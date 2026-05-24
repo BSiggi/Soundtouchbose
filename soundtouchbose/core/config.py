@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 from pathlib import Path
 from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -64,14 +65,23 @@ class ConfigStore:
         return path
 
     def load_settings(self) -> dict[str, Any]:
-        settings = DEFAULT_SETTINGS.copy()
-        settings.update(self.load_json("settings.json", {}))
+        loaded = self.load_json("settings.json", {})
+        settings = self._prepare_settings(loaded)
+        if loaded.get("home_assistant_token") != settings["home_assistant_token"]:
+            self.save_json("settings.json", settings)
         return settings
 
     def save_settings(self, settings: dict[str, Any]) -> Path:
+        merged = self._prepare_settings(settings)
+        return self.save_json("settings.json", merged)
+
+    def _prepare_settings(self, settings: dict[str, Any]) -> dict[str, Any]:
         merged = DEFAULT_SETTINGS.copy()
         merged.update(settings)
-        return self.save_json("settings.json", merged)
+        token = str(merged.get("home_assistant_token", "")).strip()
+        if not token or token == DEFAULT_SETTINGS["home_assistant_token"]:
+            merged["home_assistant_token"] = secrets.token_urlsafe(24)
+        return merged
 
     def backup_to_zip(self, zip_path: Path) -> Path:
         zip_path.parent.mkdir(parents=True, exist_ok=True)

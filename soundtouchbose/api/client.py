@@ -76,9 +76,10 @@ class SoundTouchClient:
         self._request("POST", "/volume", data=build_volume_xml(value))
 
     def power(self, state: str) -> None:
-        key = "POWER" if state.lower() == "on" else "POWER"
-        self.send_key(key, "press")
-        self.send_key(key, "release")
+        if state.lower() not in {"on", "off"}:
+            raise ValueError("Power state must be 'on' or 'off'")
+        self.send_key("POWER", "press")
+        self.send_key("POWER", "release")
 
     def set_zone(self, master_ip: str, member_ips: list[str]) -> None:
         self._request("POST", "/setZone", data=build_zone_xml(master_ip, member_ips))

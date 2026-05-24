@@ -30,7 +30,7 @@ class StationListWidget(QListWidget):
         super().__init__()
         self.setDragEnabled(True)
 
-    def startDrag(self, supported_actions) -> None:  # noqa: ARG002,N802
+    def startDrag(self, _supported_actions) -> None:  # noqa: N802
         item = self.currentItem()
         if not isinstance(item, StationListItem):
             return
