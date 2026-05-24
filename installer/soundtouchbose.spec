@@ -1,13 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
+import sys
+
 from PyInstaller.utils.hooks import collect_data_files
+
+PROJECT_ROOT = Path(SPECPATH).resolve().parent
+ENTRYPOINT = PROJECT_ROOT / "soundtouchbose" / "__main__.py"
+ICON_PATH = PROJECT_ROOT / "soundtouchbose" / "resources" / "icon.ico"
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 datas = collect_data_files('soundtouchbose')
 
 block_cipher = None
 
 a = Analysis(
-    ['soundtouchbose/__main__.py'],
-    pathex=[],
+    [str(ENTRYPOINT)],
+    pathex=[str(PROJECT_ROOT)],
     binaries=[],
     datas=datas,
     hiddenimports=[],
@@ -36,5 +45,5 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
-    icon='soundtouchbose/resources/icon.ico',
+    icon=str(ICON_PATH),
 )
