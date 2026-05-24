@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from soundtouchbose.api.client import SoundTouchRequestError
+
 SOURCE_TEXTS: dict[str, str] = {
     "invalid_source": "Keine gültige Quelle verfügbar",
     "standby": "Standby",
@@ -33,6 +35,10 @@ def is_valid_source(raw_source: str) -> bool:
 
 
 def user_error_text(exc: Exception) -> str:
+    if isinstance(exc, SoundTouchRequestError):
+        if exc.status_code is not None:
+            return f"Gerät hat die Anfrage am Endpunkt {exc.endpoint} abgelehnt (HTTP {exc.status_code})."
+        return "Verbindung zum Gerät fehlgeschlagen. Bitte Erreichbarkeit und Firewall prüfen."
     raw = str(exc).strip()
     lowered = raw.lower()
     if "invalid_source" in lowered:

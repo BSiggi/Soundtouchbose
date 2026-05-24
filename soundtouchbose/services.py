@@ -10,6 +10,7 @@ from soundtouchbose.core.cleanup_service import CleanupService
 from soundtouchbose.core.config import ConfigStore
 from soundtouchbose.core.diagnostics_service import DiagnosticsService
 from soundtouchbose.core.device_manager import DeviceManager
+from soundtouchbose.core.preset_bridge import PresetBridgeController
 from soundtouchbose.core.preset_manager import PresetManager
 from soundtouchbose.core.scheduler import SchedulerService
 from soundtouchbose.core.station_library import StationLibrary
@@ -23,6 +24,7 @@ class Services:
     device_manager: DeviceManager
     station_library: StationLibrary
     preset_manager: PresetManager
+    preset_bridge: PresetBridgeController
     zone_manager: ZoneManager
     scheduler: SchedulerService
     update_manager: UpdateManager

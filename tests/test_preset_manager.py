@@ -46,3 +46,22 @@ def test_sync_presets_from_device_persists_snapshot(tmp_path: Path) -> None:
 
     assert presets[0]["name"] == "SWR3"
     assert manager.get_cached_presets("192.168.1.5")["1"]["location"] == "/v1/playback/station/s24896"
+
+
+def test_assign_bridge_mapping_persists_locally(tmp_path: Path) -> None:
+    fake_client = FakeClient()
+    manager = PresetManager(ConfigStore(tmp_path), client_factory=lambda _ip: fake_client)
+    station = Station(
+        identifier="s42",
+        name="Teststream",
+        category="Custom",
+        source="INTERNET_RADIO",
+        location="http://example.test/stream.mp3",
+    )
+
+    manager.assign_bridge_mapping("192.168.1.8", 2, station)
+
+    bridge_station = manager.get_bridge_station("192.168.1.8", 2)
+    assert bridge_station is not None
+    assert bridge_station.name == "Teststream"
+    assert fake_client.assigned == []

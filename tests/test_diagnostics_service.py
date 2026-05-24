@@ -22,10 +22,19 @@ class FakeDeviceManager:
         ]
 
 
+class FakePresetManager:
+    def load_bridge_mappings(self):
+        return {"127.0.0.1": {"1": {"name": "Bridge Test"}}}
+
+
 def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
     config_store = ConfigStore(tmp_path / "config")
     config_store.save_settings({"home_assistant_token": "secret-token"})
-    context = SimpleNamespace(config_store=config_store, device_manager=FakeDeviceManager())
+    context = SimpleNamespace(
+        config_store=config_store,
+        device_manager=FakeDeviceManager(),
+        preset_manager=FakePresetManager(),
+    )
     service = DiagnosticsService(context)
     destination = tmp_path / "diagnostics.zip"
 
@@ -33,5 +42,7 @@ def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
     created = service.export(destination)
 
     assert report["settings"]["home_assistant_token"] == "***masked***"
+    assert report["preset_bridge"]["enabled"] is False
+    assert report["preset_bridge"]["mapped_slots"] == 1
     assert created.exists()
     assert created == destination

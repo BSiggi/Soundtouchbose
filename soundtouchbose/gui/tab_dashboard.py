@@ -41,6 +41,7 @@ class DashboardTab(QWidget):
                 self.container_layout.addWidget(card)
             try:
                 snapshot = self.services.client_factory(device.ip_address).get_now_playing()
+                self.services.preset_bridge.handle_snapshot(device.ip_address, snapshot)
                 card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
                 if device.ip_address not in self.websocket_clients:
                     self.websocket_clients[device.ip_address] = SoundTouchWebSocketClient(device.ip_address, lambda _msg, ip=device.ip_address: self.refresh_single(ip))
@@ -58,6 +59,7 @@ class DashboardTab(QWidget):
             return
         try:
             snapshot = self.services.client_factory(ip_address).get_now_playing()
+            self.services.preset_bridge.handle_snapshot(ip_address, snapshot)
             card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
         except Exception:
             card.update_state(online=False, source="")
