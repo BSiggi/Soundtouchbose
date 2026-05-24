@@ -53,7 +53,18 @@ class PresetsTab(QWidget):
         layout.addLayout(grid)
         self.refresh_devices()
 
+    def bridge_enabled(self) -> bool:
+        settings = self.services.config_store.load_settings()
+        return bool(settings.get("preset_bridge_enabled", False))
+
+    def _update_mode_texts(self) -> None:
+        if self.bridge_enabled():
+            self.bulk_button.setText("Alle 6 Bridge-Regeln auf alle Geräte übernehmen")
+        else:
+            self.bulk_button.setText("Alle 6 Presets auf alle Geräte übertragen")
+
     def refresh_devices(self) -> None:
+        self._update_mode_texts()
         current_data = self.device_combo.currentData()
         self.device_combo.clear()
         self.device_combo.addItem("Alle Geräte", None)
@@ -81,9 +92,13 @@ class PresetsTab(QWidget):
             QMessageBox.information(self, "Preset", "Der ausgewählte Sender wurde nicht gefunden.")
             return
         errors = []
+        bridge_mode = self.bridge_enabled()
         for ip_address in self.selected_ips():
             try:
-                self.services.preset_manager.assign_preset(ip_address, preset_number, station)
+                if bridge_mode:
+                    self.services.preset_manager.assign_bridge_rule(ip_address, preset_number, station)
+                else:
+                    self.services.preset_manager.assign_preset(ip_address, preset_number, station)
             except Exception as exc:
                 errors.append(f"{ip_address}: {user_error_text(exc)}")
         self.active_station = station
@@ -100,7 +115,13 @@ class PresetsTab(QWidget):
                 station_payload = cache.get(ips[0], {}).get(str(preset_number))
                 if station_payload:
                     label = f"Preset {preset_number}\n{station_payload.get('name', station_payload.get('item_name', 'Unbekannt'))}"
-            button.setToolTip("Klicken zum Bearbeiten, Sender aus 'Sender'-Liste hierher ziehen oder Rechtsklick für Aktionen.")
+            if self.bridge_enabled():
+                button.setToolTip(
+                    "Bridge-Regel: Gerätetaste Preset 1-6 als Trigger nutzen. "
+                    "Beim Erkennen startet die App den hier zugeordneten Sender."
+                )
+            else:
+                button.setToolTip("Klicken zum Bearbeiten, Sender aus 'Sender'-Liste hierher ziehen oder Rechtsklick für Aktionen.")
             button.setText(label)
 
     def edit_preset(self, preset_number: int) -> None:
@@ -115,7 +136,7 @@ class PresetsTab(QWidget):
         entries = [f"{station.name} ({station.category})" for station in stations]
         selected_label, ok = QInputDialog.getItem(
             self,
-            f"Preset {preset_number} bearbeiten",
+            f"Preset {preset_number} {'(Bridge-Regel)' if self.bridge_enabled() else 'bearbeiten'}",
             "Sender auswählen:",
             entries,
             0,
@@ -165,7 +186,10 @@ class PresetsTab(QWidget):
             return
         station = Station.from_dict(station_payload)
         for device in self.services.device_manager.all_devices():
-            self.services.preset_manager.assign_preset(device.ip_address, preset_number, station)
+            if self.bridge_enabled():
+                self.services.preset_manager.assign_bridge_rule(device.ip_address, preset_number, station)
+            else:
+                self.services.preset_manager.assign_preset(device.ip_address, preset_number, station)
         self.refresh_buttons()
 
     def apply_cached_to_all(self) -> None:
@@ -183,7 +207,12 @@ class PresetsTab(QWidget):
         }
         device_ips = [device.ip_address for device in self.services.device_manager.all_devices()]
         try:
-            self.services.preset_manager.apply_to_all(device_ips, assignments)
+            if self.bridge_enabled():
+                for ip_address in device_ips:
+                    for preset_number, station in assignments.items():
+                        self.services.preset_manager.assign_bridge_rule(ip_address, preset_number, station)
+            else:
+                self.services.preset_manager.apply_to_all(device_ips, assignments)
         except Exception as exc:
             QMessageBox.warning(self, "Preset-Fehler", user_error_text(exc))
         self.refresh_buttons()

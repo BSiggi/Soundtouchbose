@@ -46,3 +46,20 @@ def test_sync_presets_from_device_persists_snapshot(tmp_path: Path) -> None:
 
     assert presets[0]["name"] == "SWR3"
     assert manager.get_cached_presets("192.168.1.5")["1"]["location"] == "/v1/playback/station/s24896"
+
+
+def test_assign_bridge_rule_only_updates_cache(tmp_path: Path) -> None:
+    fake_client = FakeClient()
+    manager = PresetManager(ConfigStore(tmp_path), client_factory=lambda _ip: fake_client)
+    station = Station(
+        identifier="local-stream",
+        name="Lokaler Stream",
+        category="Custom",
+        source="INTERNET_RADIO",
+        location="https://example.test/stream.mp3",
+    )
+
+    manager.assign_bridge_rule("192.168.1.99", 2, station)
+
+    assert fake_client.assigned == []
+    assert manager.get_cached_presets("192.168.1.99")["2"]["location"] == "https://example.test/stream.mp3"

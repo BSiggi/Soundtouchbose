@@ -17,6 +17,7 @@ from soundtouchbose.core.cleanup_service import CleanupService
 from soundtouchbose.core.config import ConfigStore
 from soundtouchbose.core.diagnostics_service import DiagnosticsService
 from soundtouchbose.core.device_manager import DeviceManager
+from soundtouchbose.core.preset_bridge import PresetBridgeService
 from soundtouchbose.core.preset_manager import PresetManager
 from soundtouchbose.core.scheduler import SchedulerService
 from soundtouchbose.core.station_library import StationLibrary
@@ -43,6 +44,7 @@ class SoundTouchBoseApplication(QMainWindow):
         self.setCentralWidget(self.main_window)
         self.tray_icon = self._create_tray_icon()
         self._server_threads: list[threading.Thread] = []
+        self.services.preset_bridge_service.start()
         self._start_optional_servers()
 
     def _create_tray_icon(self) -> QSystemTrayIcon:
@@ -109,6 +111,7 @@ class SoundTouchBoseApplication(QMainWindow):
 
     def exit_application(self) -> None:
         self.services.scheduler.shutdown()
+        self.services.preset_bridge_service.stop()
         self.tray_icon.hide()
         QApplication.instance().quit()
 
@@ -131,16 +134,24 @@ def create_services(config_dir: Path | None = None) -> Services:
     station_library = StationLibrary(config_store)
     device_manager = DeviceManager(config_store, client_factory)
     update_manager = UpdateManager(config_store, Path(__file__).resolve().parents[1], __version__)
+    preset_manager = PresetManager(config_store, client_factory)
     services = Services(
         config_store=config_store,
         device_manager=device_manager,
         station_library=station_library,
-        preset_manager=PresetManager(config_store, client_factory),
+        preset_manager=preset_manager,
         zone_manager=ZoneManager(config_store, client_factory),
         scheduler=SchedulerService(config_store, station_library, client_factory),
         update_manager=update_manager,
         diagnostics_service=DiagnosticsService(),
         cleanup_service=CleanupService(config_store),
+        preset_bridge_service=PresetBridgeService(
+            config_store=config_store,
+            device_manager=device_manager,
+            preset_manager=preset_manager,
+            station_library=station_library,
+            client_factory=client_factory,
+        ),
         client_factory=client_factory,
     )
     services.diagnostics_service.services = services

@@ -51,6 +51,15 @@ class SettingsTab(QWidget):
         self.night_volume = QSpinBox()
         self.night_volume.setRange(0, 100)
         self.night_volume.setValue(int(self.settings.get("night_mode_max_volume", 20)))
+        self.preset_bridge_enabled = QCheckBox()
+        self.preset_bridge_enabled.setChecked(self.settings.get("preset_bridge_enabled", False))
+        self.preset_bridge_hint = QLabel(
+            "Workaround: Preset-Tasten am Gerät werden nur als Trigger erkannt. "
+            "Die App startet dann den hier zugeordneten Sender auf demselben Gerät, "
+            "ohne Bose-Geräte-Presets umzuschreiben. "
+            "Die Erkennung erfolgt indirekt über lokale /now_playing-/presets-Daten."
+        )
+        self.preset_bridge_hint.setWordWrap(True)
         layout.addRow("Mit Windows starten", self.autostart)
         layout.addRow("Im Tray minimieren", self.minimize_to_tray)
         layout.addRow("Mini-Web-UI aktiv", self.web_enabled)
@@ -60,6 +69,8 @@ class SettingsTab(QWidget):
         layout.addRow("Home Assistant Token", self.ha_token)
         layout.addRow("Nachtmodus aktiv", self.night_mode)
         layout.addRow("Nachtmodus Max-Lautstärke", self.night_volume)
+        layout.addRow("Preset Bridge (Workaround) aktiv", self.preset_bridge_enabled)
+        layout.addRow("", self.preset_bridge_hint)
         action_row = QHBoxLayout()
         save_button = QPushButton("Speichern")
         save_button.clicked.connect(self.save_settings)
@@ -92,6 +103,7 @@ class SettingsTab(QWidget):
             "home_assistant_token": self.ha_token.text().strip() or "change-me",
             "night_mode_enabled": self.night_mode.isChecked(),
             "night_mode_max_volume": self.night_volume.value(),
+            "preset_bridge_enabled": self.preset_bridge_enabled.isChecked(),
         }
         self.services.config_store.save_settings(settings)
         sync_autostart(self.autostart.isChecked())
