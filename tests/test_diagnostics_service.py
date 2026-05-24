@@ -30,8 +30,11 @@ def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
     destination = tmp_path / "diagnostics.zip"
 
     report = service.collect_report()
+    service.record_device_error("127.0.0.1", "now_playing", RuntimeError("SoundTouch request failed for http://127.0.0.1:8090/now_playing"))
+    report_with_error = service.collect_report()
     created = service.export(destination)
 
     assert report["settings"]["home_assistant_token"] == "***masked***"
+    assert report_with_error["device_last_errors"]["127.0.0.1"]["operation"] == "now_playing"
     assert created.exists()
     assert created == destination

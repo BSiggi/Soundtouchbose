@@ -10,7 +10,7 @@ from soundtouchbose.core.station_library import Station
 
 
 class PresetManager:
-    """Assign and cache presets for one or more devices."""
+    """Manage local app favorites and optional device preset writes."""
 
     def __init__(self, config_store: ConfigStore, client_factory: Callable[[str], SoundTouchClient] = SoundTouchClient) -> None:
         self.config_store = config_store
@@ -24,10 +24,20 @@ class PresetManager:
 
     def assign_preset(self, ip_address: str, preset_number: int, station: Station) -> bool:
         client = self.client_factory(ip_address)
-        ok = client.set_preset(preset_number, station)
+        ok = False
+        write_error: Exception | None = None
+        try:
+            ok = client.set_preset(preset_number, station)
+        except Exception as exc:
+            write_error = exc
         cache = self.load_cache()
-        cache.setdefault(ip_address, {})[str(preset_number)] = station.to_dict()
+        entry = station.to_dict()
+        entry["local_favorite"] = True
+        entry["device_write_ok"] = ok
+        cache.setdefault(ip_address, {})[str(preset_number)] = entry
         self.save_cache(cache)
+        if write_error is not None:
+            raise write_error
         return ok
 
     def sync_presets_from_device(self, ip_address: str) -> list[dict[str, object]]:

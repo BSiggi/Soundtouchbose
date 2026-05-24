@@ -12,12 +12,13 @@ from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from soundtouchbose import __version__
-from soundtouchbose.core.error_texts import user_error_text
+from soundtouchbose.core.error_texts import error_details, user_error_text
 
 
 class DiagnosticsService:
     def __init__(self, services=None) -> None:
         self.services = services
+        self.device_last_errors: dict[str, dict[str, object]] = {}
 
     @staticmethod
     def _check_port(host: str, port: int, timeout: float = 1.0) -> bool:
@@ -52,7 +53,10 @@ class DiagnosticsService:
                     "port_8090_reachable": reachable_8090,
                 }
             )
-            devices.append(asdict(device))
+            payload = asdict(device)
+            if device.ip_address in self.device_last_errors:
+                payload["last_error_details"] = self.device_last_errors[device.ip_address]
+            devices.append(payload)
         firewall_hints = []
         if any(not item["port_8090_reachable"] for item in network_checks):
             firewall_hints.append("Port 8090 ist auf mindestens einem Gerät nicht erreichbar. Firewall oder Netzsegment prüfen.")
@@ -71,6 +75,7 @@ class DiagnosticsService:
             "devices": devices,
             "network_checks": network_checks,
             "firewall_hints": firewall_hints,
+            "device_last_errors": self.device_last_errors,
             "recent_errors": [line for line in self._tail_log().splitlines() if "ERROR" in line or "WARNING" in line][-50:],
         }
         return report
@@ -88,3 +93,7 @@ class DiagnosticsService:
 
     def safe_call_summary(self, operation: str, exc: Exception) -> str:
         return f"{operation} fehlgeschlagen: {user_error_text(exc)}"
+
+    def record_device_error(self, ip_address: str, operation: str, exc: Exception) -> None:
+        details = error_details(exc, operation=operation)
+        self.device_last_errors[ip_address] = details

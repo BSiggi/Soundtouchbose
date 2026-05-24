@@ -12,8 +12,10 @@ from PySide6.QtWidgets import (
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
+    QLabel,
 )
 
+from soundtouchbose.core.error_texts import user_error_text
 from soundtouchbose.services import Services
 
 
@@ -31,12 +33,17 @@ class DevicesTab(QWidget):
         self.remove_button.clicked.connect(self.remove_selected)
         for button in (self.scan_button, self.add_button, self.remove_button):
             button_row.addWidget(button)
+        self.info_label = QLabel(
+            "Tipp: Nach Werksreset kann sich die Geräte-IP ändern. Speichere bevorzugte/manuelle IPs in den Einstellungen oder nutze eine DHCP-Reservierung im Router."
+        )
+        self.info_label.setWordWrap(True)
         self.table = QTableWidget(0, 10)
         self.table.setHorizontalHeaderLabels(
             ["Name", "IP", "MAC", "Modell", "Firmware", "Quelle", "Rohquelle", "Erreichbar", "Dienst", "Status"]
         )
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addLayout(button_row)
+        layout.addWidget(self.info_label)
         layout.addWidget(self.table)
         self.refresh_table()
 
@@ -70,7 +77,8 @@ class DevicesTab(QWidget):
         try:
             self.services.device_manager.add_manual_device(ip_address)
         except Exception as exc:
-            QMessageBox.warning(self, "Fehler", f"Gerät konnte nicht hinzugefügt werden:\n{exc}")
+            self.services.diagnostics_service.record_device_error(ip_address, "add_manual_device", exc)
+            QMessageBox.warning(self, "Fehler", f"Gerät konnte nicht hinzugefügt werden:\n{user_error_text(exc)}")
             return
         self.refresh_table()
 

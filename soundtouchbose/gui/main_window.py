@@ -33,7 +33,7 @@ class MainWindow(QWidget):
         self.settings_tab = SettingsTab(services)
         self.stations_tab.stationSelected.connect(self.presets_tab.set_active_station)
         self.tabs.addTab(self.devices_tab, "Geräte")
-        self.tabs.addTab(self.presets_tab, "Presets")
+        self.tabs.addTab(self.presets_tab, "Favoriten/Presets")
         self.tabs.addTab(self.stations_tab, "Sender")
         self.tabs.addTab(self.zones_tab, "Zonen")
         self.tabs.addTab(self.schedule_tab, "Zeitplan")

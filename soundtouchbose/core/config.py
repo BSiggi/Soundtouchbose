@@ -22,6 +22,7 @@ DEFAULT_SETTINGS = {
     "night_mode_start": "22:00",
     "night_mode_end": "07:00",
     "night_mode_max_volume": 20,
+    "preferred_device_ips": [],
 }
 
 

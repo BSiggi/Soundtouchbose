@@ -41,6 +41,23 @@ def test_parse_info_xml_reads_expected_fields() -> None:
     assert parsed["software_version"] == "1.2.3"
 
 
+def test_parse_info_xml_repairs_mojibake_name() -> None:
+    xml = """
+    <info>
+      <name>BÃRO</name>
+      <deviceID>123</deviceID>
+      <type>SoundTouch 20</type>
+      <networkType>wifi</networkType>
+      <softwareVersion>1.2.3</softwareVersion>
+      <macAddress>AA:BB:CC</macAddress>
+    </info>
+    """
+
+    parsed = parse_info_xml(xml)
+
+    assert parsed["name"] == "BÜRO"
+
+
 def test_parse_presets_xml_extracts_entries() -> None:
     xml = """
     <presets>

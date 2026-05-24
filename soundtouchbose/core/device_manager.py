@@ -8,7 +8,7 @@ from typing import Callable
 from soundtouchbose.api.client import SoundTouchClient
 from soundtouchbose.api.discovery import discover_once
 from soundtouchbose.core.config import ConfigStore
-from soundtouchbose.core.error_texts import is_valid_source, source_display_text, user_error_text
+from soundtouchbose.core.error_texts import error_details, is_valid_source, source_display_text, user_error_text
 
 
 @dataclass(slots=True)
@@ -25,6 +25,7 @@ class Device:
     service_available: bool = False
     source_valid: bool = False
     error_text: str = ""
+    last_error_details: dict[str, object] | None = None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -44,6 +45,7 @@ class Device:
             service_available=bool(payload.get("service_available", payload.get("online", False))),
             source_valid=bool(payload.get("source_valid", True)),
             error_text=str(payload.get("error_text", "")),
+            last_error_details=payload.get("last_error_details") if isinstance(payload.get("last_error_details"), dict) else None,
         )
 
 
@@ -66,25 +68,60 @@ class DeviceManager:
     def all_devices(self) -> list[Device]:
         return sorted(self.devices.values(), key=lambda device: device.name.lower())
 
+    @staticmethod
+    def _repair_mojibake(value: str) -> str:
+        text = str(value or "")
+        if "Ã" not in text and "Â" not in text:
+            return text
+        try:
+            repaired = text.encode("latin-1").decode("utf-8")
+        except UnicodeError:
+            return text
+        return repaired if repaired else text
+
     def add_manual_device(self, ip_address: str) -> Device:
         client = self.client_factory(ip_address)
         info = client.get_info()
-        now_playing = client.get_now_playing()
-        source_raw = str(now_playing.get("source", ""))
-        source_valid = is_valid_source(source_raw)
+        name = self._repair_mojibake(str(info.get("name") or ip_address))
+        source_raw = ""
+        source_valid = False
+        source = "Quelle derzeit nicht lesbar"
+        error_text = ""
+        last_error = None
+        try:
+            now_playing = client.get_now_playing()
+            source_raw = str(now_playing.get("source", ""))
+            source_valid = is_valid_source(source_raw)
+            source = source_display_text(source_raw, now_playing)
+            error_text = "" if source_valid else "Gerät ist erreichbar, aber die Quelle ist derzeit nicht lesbar (INVALID_SOURCE)."
+            if not source_valid:
+                last_error = {
+                    "operation": "now_playing",
+                    "endpoint": "/now_playing",
+                    "category": "invalid_source",
+                    "message": "Gerät meldet INVALID_SOURCE",
+                }
+        except Exception as exc:
+            details = error_details(exc, operation="now_playing")
+            details["endpoint"] = details.get("endpoint") or "/now_playing"
+            last_error = details
+            error_text = "Gerät ist erreichbar, aber die Quelle ist derzeit nicht lesbar."
+            if details.get("category") in {"network", "timeout"}:
+                error_text = user_error_text(exc)
         device = Device(
-            name=info.get("name") or ip_address,
+            name=name,
             ip_address=ip_address,
             mac_address=info.get("mac_address", ""),
             model=info.get("type", ""),
             firmware=info.get("software_version", ""),
             online=True,
-            source=source_display_text(source_raw, now_playing),
+            source=source,
             source_raw=source_raw,
             reachable=True,
             service_available=True,
             source_valid=source_valid,
-            error_text="" if source_valid else "Quelle am Gerät derzeit ungültig oder unbekannt.",
+            error_text=error_text,
+            last_error_details=last_error,
         )
         self.devices[ip_address] = device
         self.save()
@@ -107,10 +144,12 @@ class DeviceManager:
             device.service_available = False
             device.source_valid = False
             device.error_text = user_error_text(exc)
+            device.last_error_details = error_details(exc, operation="refresh_device")
             self.save()
         return device
 
     def rescan(self) -> list[Device]:
+        known_ips = {device.ip_address for device in self.devices.values()}
         for discovered in discover_once():
             try:
                 self.add_manual_device(discovered.ip_address)
@@ -118,7 +157,7 @@ class DeviceManager:
                 self.devices.setdefault(
                     discovered.ip_address,
                     Device(
-                        name=discovered.name,
+                        name=self._repair_mojibake(discovered.name),
                         ip_address=discovered.ip_address,
                         online=False,
                         reachable=False,
@@ -127,5 +166,27 @@ class DeviceManager:
                         error_text="Gerät gefunden, Dienststatus aktuell nicht abrufbar.",
                     ),
                 )
+            known_ips.add(discovered.ip_address)
+        preferred_ips = self.config_store.load_settings().get("preferred_device_ips", [])
+        if isinstance(preferred_ips, list):
+            for preferred_ip in preferred_ips:
+                ip = str(preferred_ip).strip()
+                if not ip or ip in known_ips:
+                    continue
+                try:
+                    self.add_manual_device(ip)
+                except Exception:
+                    self.devices.setdefault(
+                        ip,
+                        Device(
+                            name=ip,
+                            ip_address=ip,
+                            online=False,
+                            reachable=False,
+                            service_available=False,
+                            source_valid=False,
+                            error_text="Bevorzugte IP gespeichert, Gerät aktuell nicht erreichbar.",
+                        ),
+                    )
         self.save()
         return self.all_devices()
