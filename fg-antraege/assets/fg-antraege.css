@@ -1,0 +1,129 @@
+/* FG Anträge Plugin CSS */
+.fg-antraege-counter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 20px 0;
+    justify-content: flex-end;
+}
+.fg-counter-box {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 110px;
+    flex: 1 1 110px;
+    max-width: 160px;
+}
+.fg-counter-zahl {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    color: #F5A623;
+    line-height: 1.2;
+}
+.fg-color-angenommen { color: #28a745 !important; }
+.fg-color-abgelehnt  { color: #dc3545 !important; }
+.fg-color-eingereicht{ color: #F5A623 !important; }
+.fg-counter-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.fg-filter-buttons {
+    margin-bottom: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.fg-filter-btn {
+    padding: 6px 16px;
+    border: 1px solid #e0e0e0;
+    background: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background .2s, color .2s;
+}
+.fg-filter-btn.active,
+.fg-filter-btn:hover {
+    background: #F5A623;
+    color: #fff;
+    border-color: #F5A623;
+}
+.fg-antrag-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+.fg-antrag-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    background: #fafafa;
+    flex-wrap: wrap;
+}
+.fg-antrag-titel {
+    font-weight: 600;
+    flex: 1;
+    font-size: 15px;
+}
+.fg-status-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #fff;
+    white-space: nowrap;
+}
+.fg-status-angenommen { background: #28a745; }
+.fg-status-abgelehnt  { background: #dc3545; }
+.fg-status-eingereicht{ background: #F5A623; }
+.fg-antrag-datum {
+    font-size: 13px;
+    color: #888;
+    white-space: nowrap;
+}
+.fg-accordion-toggle {
+    margin-left: auto;
+    transition: transform .2s;
+    font-size: 12px;
+    color: #999;
+}
+.fg-antrag-item.open .fg-accordion-toggle {
+    transform: rotate(90deg);
+}
+.fg-antrag-body {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid #e0e0e0;
+    background: #fff;
+}
+.fg-antrag-item.open .fg-antrag-body {
+    display: block;
+}
+.fg-pdf-btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: #F5A623;
+    color: #111;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+}
+.fg-pdf-btn:hover {
+    background: #d4891a;
+    color: #111;
+}
+@media (max-width: 600px) {
+    .fg-antraege-counter { justify-content: center; }
+    .fg-counter-box { max-width: 100%; }
+}
