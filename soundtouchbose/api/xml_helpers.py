@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from html import escape
 from typing import Any
 from xml.etree import ElementTree as ET
 
 from soundtouchbose.core.station_library import Station
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _try_parse_int(value: object) -> int | None:
@@ -19,6 +22,30 @@ def _try_parse_int(value: object) -> int | None:
         return int(text)
     except ValueError:
         return None
+
+
+def _local_name(tag: str) -> str:
+    if "}" in tag:
+        return tag.rsplit("}", 1)[-1]
+    return tag
+
+
+def _parse_now_playing_element(element: ET.Element) -> dict[str, Any]:
+    content = element.find("ContentItem")
+    preset_id = _try_parse_int(element.attrib.get("presetID"))
+    if preset_id is None and content is not None:
+        preset_id = _try_parse_int(content.attrib.get("presetID"))
+    return {
+        "source": element.attrib.get("source", ""),
+        "preset_id": preset_id,
+        "device_name": element.findtext("deviceName", default=""),
+        "item_name": element.findtext("itemName", default=""),
+        "station_name": element.findtext("stationName", default=""),
+        "track": element.findtext("track", default=""),
+        "artist": element.findtext("artist", default=""),
+        "album": element.findtext("album", default=""),
+        "content_item": content.attrib if content is not None else {},
+    }
 
 
 def build_content_item_xml(station: Station) -> str:
@@ -61,21 +88,23 @@ def parse_info_xml(xml_text: str) -> dict[str, Any]:
 
 def parse_now_playing_xml(xml_text: str) -> dict[str, Any]:
     root = ET.fromstring(xml_text)
-    content = root.find("ContentItem")
-    preset_id = _try_parse_int(root.attrib.get("presetID"))
-    if preset_id is None and content is not None:
-        preset_id = _try_parse_int(content.attrib.get("presetID"))
-    return {
-        "source": root.attrib.get("source", ""),
-        "preset_id": preset_id,
-        "device_name": root.findtext("deviceName", default=""),
-        "item_name": root.findtext("itemName", default=""),
-        "station_name": root.findtext("stationName", default=""),
-        "track": root.findtext("track", default=""),
-        "artist": root.findtext("artist", default=""),
-        "album": root.findtext("album", default=""),
-        "content_item": content.attrib if content is not None else {},
-    }
+    return _parse_now_playing_element(root)
+
+
+def parse_now_playing_update_xml(xml_text: str) -> dict[str, Any] | None:
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        LOGGER.debug("Ignoring non-XML websocket payload: %s", exc)
+        return None
+    root_tag = _local_name(root.tag).lower()
+    if root_tag == "nowplaying":
+        return _parse_now_playing_element(root)
+    for element in root.iter():
+        element_tag = _local_name(element.tag).lower()
+        if element_tag == "nowplaying":
+            return _parse_now_playing_element(element)
+    return None
 
 
 def parse_presets_xml(xml_text: str) -> list[dict[str, Any]]:
