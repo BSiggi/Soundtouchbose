@@ -1,50 +1,27 @@
-(function () {
-	'use strict';
+document.addEventListener('DOMContentLoaded', function(){
 
-	function initFilters() {
-		var wrappers = document.querySelectorAll('.fg-antraege-list-wrapper');
-		if (!wrappers.length) {
-			return;
-		}
+  // Accordion
+  document.querySelectorAll('.fg-antrag-header').forEach(function(header){
+    header.addEventListener('click', function(){
+      var item = this.closest('.fg-antrag-item');
+      item.classList.toggle('open');
+    });
+  });
 
-		wrappers.forEach(function (wrapper) {
-			var buttons = wrapper.querySelectorAll('.fg-antraege-filter__btn');
-			var items = wrapper.querySelectorAll('.fg-antrag-item');
+  // Filter
+  document.querySelectorAll('.fg-filter-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.fg-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      var filter = this.getAttribute('data-filter');
+      document.querySelectorAll('.fg-antrag-item').forEach(function(item){
+        if(filter === 'alle' || item.getAttribute('data-status') === filter){
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  });
 
-			buttons.forEach(function (button) {
-				button.addEventListener('click', function () {
-					var filter = button.getAttribute('data-filter');
-					buttons.forEach(function (inner) {
-						inner.classList.remove('is-active');
-					});
-					button.classList.add('is-active');
-					items.forEach(function (item) {
-						var status = item.getAttribute('data-status');
-						item.style.display = filter === 'alle' || filter === status ? '' : 'none';
-					});
-				});
-			});
-		});
-	}
-
-	function initAccordion() {
-		var toggles = document.querySelectorAll('.fg-antrag-item__toggle');
-		if (!toggles.length) {
-			return;
-		}
-
-		toggles.forEach(function (toggle) {
-			toggle.addEventListener('click', function () {
-				var parent = toggle.closest('.fg-antrag-item');
-				if (parent) {
-					parent.classList.toggle('is-open');
-				}
-			});
-		});
-	}
-
-	document.addEventListener('DOMContentLoaded', function () {
-		initFilters();
-		initAccordion();
-	});
-})();
+});

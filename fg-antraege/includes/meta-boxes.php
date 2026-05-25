@@ -1,90 +1,65 @@
 <?php
+defined('ABSPATH') || exit;
 
-defined( 'ABSPATH' ) || exit;
+add_action('add_meta_boxes', 'fg_antraege_add_meta_boxes');
+add_action('save_post_fg_antrag', 'fg_antraege_save_meta');
 
-/**
- * Meta-Boxen registrieren.
- *
- * @return void
- */
 function fg_antraege_add_meta_boxes() {
-	add_meta_box(
-		'fg_antraege_details',
-		__( 'Antragsdetails', 'fg-antraege' ),
-		'fg_antraege_render_meta_box',
-		'fg_antrag',
-		'normal',
-		'default'
-	);
-}
-add_action( 'add_meta_boxes', 'fg_antraege_add_meta_boxes' );
-
-/**
- * Meta-Box ausgeben.
- *
- * @param WP_Post $post Beitrag.
- * @return void
- */
-function fg_antraege_render_meta_box( $post ) {
-	$status  = get_post_meta( $post->ID, '_fg_status', true );
-	$pdf_url = get_post_meta( $post->ID, '_fg_pdf_url', true );
-
-	wp_nonce_field( 'fg_antraege_save_meta', 'fg_antraege_nonce' );
-	?>
-	<p>
-		<label for="fg_status"><strong><?php echo esc_html__( 'Status', 'fg-antraege' ); ?></strong></label><br />
-		<select id="fg_status" name="fg_status">
-			<option value="eingereicht" <?php selected( $status, 'eingereicht' ); ?>><?php echo esc_html__( 'Eingereicht', 'fg-antraege' ); ?></option>
-			<option value="angenommen" <?php selected( $status, 'angenommen' ); ?>><?php echo esc_html__( 'Angenommen', 'fg-antraege' ); ?></option>
-			<option value="abgelehnt" <?php selected( $status, 'abgelehnt' ); ?>><?php echo esc_html__( 'Abgelehnt', 'fg-antraege' ); ?></option>
-		</select>
-	</p>
-	<p>
-		<label for="fg_pdf_url"><strong><?php echo esc_html__( 'PDF-URL', 'fg-antraege' ); ?></strong></label><br />
-		<input type="url" id="fg_pdf_url" name="fg_pdf_url" value="<?php echo esc_attr( (string) $pdf_url ); ?>" class="widefat" />
-	</p>
-	<?php
+    add_meta_box('fg_antrag_details', 'Antrags-Details', 'fg_antraege_meta_box_html', 'fg_antrag', 'normal', 'high');
 }
 
-/**
- * Meta-Box-Daten speichern.
- *
- * @param int $post_id Post-ID.
- * @return void
- */
-function fg_antraege_save_meta_boxes( $post_id ) {
-	if ( ! isset( $_POST['fg_antraege_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['fg_antraege_nonce'] ) ), 'fg_antraege_save_meta' ) ) {
-		return;
-	}
-
-	if ( ! current_user_can( 'edit_posts' ) ) {
-		return;
-	}
-
-	if ( ! current_user_can( 'edit_post', $post_id ) ) {
-		return;
-	}
-
-	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-		return;
-	}
-
-	if ( isset( $_POST['post_type'] ) && 'fg_antrag' !== sanitize_text_field( wp_unslash( $_POST['post_type'] ) ) ) {
-		return;
-	}
-
-	$allowed_status = array( 'eingereicht', 'angenommen', 'abgelehnt' );
-
-	if ( isset( $_POST['fg_status'] ) ) {
-		$status = sanitize_text_field( wp_unslash( $_POST['fg_status'] ) );
-		if ( ! in_array( $status, $allowed_status, true ) ) {
-			$status = 'eingereicht';
-		}
-		update_post_meta( $post_id, '_fg_status', $status );
-	}
-
-	if ( isset( $_POST['fg_pdf_url'] ) ) {
-		update_post_meta( $post_id, '_fg_pdf_url', esc_url_raw( wp_unslash( $_POST['fg_pdf_url'] ) ) );
-	}
+function fg_antraege_meta_box_html($post) {
+    wp_nonce_field('fg_antrag_save', 'fg_antrag_nonce');
+    $status  = get_post_meta($post->ID, '_fg_antrag_status', true) ?: 'eingereicht';
+    $datum   = get_post_meta($post->ID, '_fg_antrag_datum', true);
+    $pdf_url = get_post_meta($post->ID, '_fg_antrag_pdf', true);
+    ?>
+    <table class="form-table">
+        <tr>
+            <th><label for="fg_antrag_status">Status</label></th>
+            <td>
+                <select name="fg_antrag_status" id="fg_antrag_status">
+                    <option value="eingereicht" <?php selected($status, 'eingereicht'); ?>>Eingereicht</option>
+                    <option value="angenommen"  <?php selected($status, 'angenommen');  ?>>Angenommen ✓</option>
+                    <option value="abgelehnt"   <?php selected($status, 'abgelehnt');   ?>>Abgelehnt ✗</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="fg_antrag_datum">Datum (YYYY-MM-DD)</label></th>
+            <td><input type="date" name="fg_antrag_datum" id="fg_antrag_datum" value="<?php echo esc_attr($datum); ?>" /></td>
+        </tr>
+        <tr>
+            <th><label for="fg_antrag_pdf">PDF-URL</label></th>
+            <td>
+                <input type="url" name="fg_antrag_pdf" id="fg_antrag_pdf" value="<?php echo esc_url($pdf_url); ?>" style="width:70%" />
+                <button type="button" class="button" id="fg_antrag_pdf_upload">PDF auswählen</button>
+                <script>
+                document.getElementById('fg_antrag_pdf_upload').addEventListener('click', function(e){
+                    e.preventDefault();
+                    var frame = wp.media({ title: 'PDF auswählen', button: { text: 'PDF verwenden' }, multiple: false });
+                    frame.on('select', function(){
+                        var attachment = frame.state().get('selection').first().toJSON();
+                        document.getElementById('fg_antrag_pdf').value = attachment.url;
+                    });
+                    frame.open();
+                });
+                </script>
+            </td>
+        </tr>
+    </table>
+    <?php
 }
-add_action( 'save_post_fg_antrag', 'fg_antraege_save_meta_boxes' );
+
+function fg_antraege_save_meta($post_id) {
+    if (!isset($_POST['fg_antrag_nonce']) || !wp_verify_nonce($_POST['fg_antrag_nonce'], 'fg_antrag_save')) return;
+    if (!current_user_can('edit_post', $post_id)) return;
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+
+    $allowed_status = ['eingereicht', 'angenommen', 'abgelehnt'];
+    $status = isset($_POST['fg_antrag_status']) && in_array($_POST['fg_antrag_status'], $allowed_status)
+        ? $_POST['fg_antrag_status'] : 'eingereicht';
+    update_post_meta($post_id, '_fg_antrag_status', $status);
+    update_post_meta($post_id, '_fg_antrag_datum',  sanitize_text_field($_POST['fg_antrag_datum'] ?? ''));
+    update_post_meta($post_id, '_fg_antrag_pdf',    esc_url_raw($_POST['fg_antrag_pdf'] ?? ''));
+}
