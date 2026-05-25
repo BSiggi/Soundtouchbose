@@ -1,4 +1,3 @@
-// Lesefortschritt
 window.addEventListener('scroll', function() {
 	var el = document.getElementById('fg-reading-progress');
 	if (!el) return;
