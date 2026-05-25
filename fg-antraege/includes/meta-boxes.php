@@ -111,8 +111,8 @@ function fg_antraege_save_meta( $post_id ) {
 
 	if ( isset( $_POST['fg_antrag_datum'] ) ) {
 		$datum = sanitize_text_field( wp_unslash( $_POST['fg_antrag_datum'] ) );
-		/* Accept only YYYY-MM-DD format to ensure consistent storage and sorting. */
-		if ( '' === $datum || preg_match( '/^\d{4}-\d{2}-\d{2}$/', $datum ) ) {
+		/* Accept only YYYY-MM-DD format and validate that the date is real. */
+		if ( '' === $datum || ( preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $datum, $m ) && checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ) ) {
 			update_post_meta( $post_id, '_fg_antrag_datum', $datum );
 		}
 	}
