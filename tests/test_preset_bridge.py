@@ -77,3 +77,30 @@ def test_bridge_infers_preset_from_now_playing_signature(tmp_path: Path) -> None
     )
 
     assert client.selected == ["local-2"]
+
+
+def test_bridge_diagnostics_track_trigger_and_launch(tmp_path: Path) -> None:
+    config_store = ConfigStore(tmp_path)
+    config_store.save_settings({"preset_bridge_enabled": True})
+    client = FakeClient()
+    preset_manager = PresetManager(config_store, client_factory=lambda _ip: client)
+    station = Station(
+        identifier="s100",
+        name="Bridge Station",
+        category="News",
+        source="INTERNET_RADIO",
+        location="http://example.test/news",
+    )
+    preset_manager.assign_bridge_mapping("192.168.1.4", 1, station)
+    bridge = PresetBridgeController(config_store, preset_manager, lambda _ip: client)
+
+    bridge.handle_snapshot("192.168.1.4", {"source": "AUX"})
+    bridge.handle_snapshot("192.168.1.4", {"preset_id": 1})
+
+    stats = bridge.diagnostics()["192.168.1.4"]
+    assert stats["mapping_count"] == 1
+    assert stats["trigger_missing"] == 1
+    assert stats["trigger_detected"] == 1
+    assert stats["launch_attempted"] == 1
+    assert stats["launch_succeeded"] == 1
+    assert stats["detection_possible"] is True

@@ -109,7 +109,8 @@ class PresetsTab(QWidget):
         if bridge_enabled:
             self.bridge_info.setText(
                 "Preset-Bridge ist aktiv: Die Tasten 1–6 am Bose-Gerät werden nur als Auslöser genutzt. "
-                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets."
+                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets. "
+                "Hinweis: Einige SoundTouch-Geräte melden Tastendrücke nicht zuverlässig über die lokale API."
             )
         else:
             self.bridge_info.setText("")

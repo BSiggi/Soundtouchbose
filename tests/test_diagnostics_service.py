@@ -44,5 +44,6 @@ def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
     assert report["settings"]["home_assistant_token"] == "***masked***"
     assert report["preset_bridge"]["enabled"] is False
     assert report["preset_bridge"]["mapped_slots"] == 1
+    assert report["preset_bridge"]["runtime"] == {}
     assert created.exists()
     assert created == destination

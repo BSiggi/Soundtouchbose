@@ -55,7 +55,8 @@ class SettingsTab(QWidget):
         self.preset_bridge_enabled.setChecked(self.settings.get("preset_bridge_enabled", False))
         self.preset_bridge_note = QLabel(
             "Optionaler Workaround nach SoundTouch-EOL: Preset-Tasten am Gerät dienen nur als Auslöser für lokal "
-            "in der App hinterlegte Streams. Bose-Presets am Gerät werden dabei nicht geändert."
+            "in der App hinterlegte Streams. Bose-Presets am Gerät werden dabei nicht geändert. "
+            "Bei manchen Geräten sind Preset-Tastendrücke über die lokale Bose-API nicht direkt erkennbar."
         )
         self.preset_bridge_note.setWordWrap(True)
         layout.addRow("Mit Windows starten", self.autostart)

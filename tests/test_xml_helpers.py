@@ -3,6 +3,7 @@ from soundtouchbose.api.xml_helpers import (
     build_key_xml,
     parse_info_xml,
     parse_now_playing_xml,
+    parse_now_playing_update_xml,
     parse_presets_xml,
 )
 from soundtouchbose.core.station_library import Station
@@ -74,3 +75,20 @@ def test_parse_now_playing_xml_reads_preset_id() -> None:
     parsed = parse_now_playing_xml(xml)
 
     assert parsed["preset_id"] == 3
+
+
+def test_parse_now_playing_update_xml_reads_wrapped_now_playing() -> None:
+    xml = """
+    <updates>
+      <nowPlaying source="INTERNET_RADIO" presetID="1">
+        <ContentItem source="TUNEIN" location="/v1/playback/station/s1" />
+        <itemName>Sender 1</itemName>
+      </nowPlaying>
+    </updates>
+    """
+
+    parsed = parse_now_playing_update_xml(xml)
+
+    assert parsed is not None
+    assert parsed["preset_id"] == 1
+    assert parsed["item_name"] == "Sender 1"
