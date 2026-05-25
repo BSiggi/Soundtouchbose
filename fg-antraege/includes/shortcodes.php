@@ -28,52 +28,21 @@ function fg_antraege_counter_shortcode() {
 		)
 	);
 
-	$total = count( $all_ids );
+	$total     = count( $all_ids );
+	$accepted  = 0;
+	$rejected  = 0;
+	$submitted = 0;
 
-	$accepted = get_posts(
-		array(
-			'post_type'      => 'fg_antrag',
-			'post_status'    => 'publish',
-			'fields'         => 'ids',
-			'posts_per_page' => -1,
-			'meta_query'     => array(
-				array(
-					'key'   => '_fg_status',
-					'value' => 'angenommen',
-				),
-			),
-		)
-	);
-
-	$rejected = get_posts(
-		array(
-			'post_type'      => 'fg_antrag',
-			'post_status'    => 'publish',
-			'fields'         => 'ids',
-			'posts_per_page' => -1,
-			'meta_query'     => array(
-				array(
-					'key'   => '_fg_status',
-					'value' => 'abgelehnt',
-				),
-			),
-		)
-	);
-
-	$submitted = get_posts(
-		array(
-			'post_type'      => 'fg_antrag',
-			'post_status'    => 'publish',
-			'fields'         => 'ids',
-			'posts_per_page' => -1,
-			'meta_query'     => array(
-				array(
-					'key'   => '_fg_status',
-					'value' => 'eingereicht',
-				),
-			),
-		)
-	);
+	foreach ( $all_ids as $post_id ) {
+		$status = get_post_meta( $post_id, '_fg_status', true );
+		if ( 'angenommen' === $status ) {
+			++$accepted;
+		} elseif ( 'abgelehnt' === $status ) {
+			++$rejected;
+		} else {
+			++$submitted;
+		}
+	}
 
 	ob_start();
 	?>
@@ -83,15 +52,15 @@ function fg_antraege_counter_shortcode() {
 			<span class="fg-antraege-counter__label"><?php echo esc_html__( 'Gesamt', 'fg-antraege' ); ?></span>
 		</div>
 		<div class="fg-antraege-counter__item">
-			<span class="fg-antraege-counter__number"><?php echo esc_html( (string) count( $accepted ) ); ?></span>
+			<span class="fg-antraege-counter__number"><?php echo esc_html( (string) $accepted ); ?></span>
 			<span class="fg-antraege-counter__label"><?php echo esc_html__( 'Angenommen', 'fg-antraege' ); ?></span>
 		</div>
 		<div class="fg-antraege-counter__item">
-			<span class="fg-antraege-counter__number"><?php echo esc_html( (string) count( $rejected ) ); ?></span>
+			<span class="fg-antraege-counter__number"><?php echo esc_html( (string) $rejected ); ?></span>
 			<span class="fg-antraege-counter__label"><?php echo esc_html__( 'Abgelehnt', 'fg-antraege' ); ?></span>
 		</div>
 		<div class="fg-antraege-counter__item">
-			<span class="fg-antraege-counter__number"><?php echo esc_html( (string) count( $submitted ) ); ?></span>
+			<span class="fg-antraege-counter__number"><?php echo esc_html( (string) $submitted ); ?></span>
 			<span class="fg-antraege-counter__label"><?php echo esc_html__( 'Eingereicht', 'fg-antraege' ); ?></span>
 		</div>
 	</div>
@@ -106,11 +75,13 @@ add_shortcode( 'fg_antraege_counter', 'fg_antraege_counter_shortcode' );
  * @return string
  */
 function fg_antraege_liste_shortcode() {
+	$posts_per_page = (int) apply_filters( 'fg_antraege_list_posts_per_page', -1 );
+
 	$query = new WP_Query(
 		array(
 			'post_type'      => 'fg_antrag',
 			'post_status'    => 'publish',
-			'posts_per_page' => -1,
+			'posts_per_page' => $posts_per_page,
 			'orderby'        => 'date',
 			'order'          => 'DESC',
 		)

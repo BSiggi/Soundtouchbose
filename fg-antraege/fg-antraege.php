@@ -84,7 +84,7 @@ function fg_antraege_maybe_upgrade() {
  * @return void
  */
 function fg_antraege_run_upgrade( $from_version ) {
-	$from_version = (string) $from_version;
+	// Platzhalter: künftige Migrationen auf Basis von $from_version ergänzen.
 }
 
 add_action( 'plugins_loaded', 'fg_antraege_maybe_upgrade' );
