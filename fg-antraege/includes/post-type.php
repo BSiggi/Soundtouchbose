@@ -34,3 +34,17 @@ function fg_antraege_register_post_type() {
 }
 
 add_action( 'init', 'fg_antraege_register_post_type' );
+
+function fg_antraege_label_for_status( $status ) {
+	$labels = array(
+		'eingereicht' => __( 'Eingereicht', 'fg-antraege' ),
+		'angenommen'  => __( 'Angenommen', 'fg-antraege' ),
+		'abgelehnt'   => __( 'Abgelehnt', 'fg-antraege' ),
+	);
+
+	return $labels[ $status ] ?? __( 'Eingereicht', 'fg-antraege' );
+}
+
+function fg_antraege_allowed_statuses() {
+	return array( 'eingereicht', 'angenommen', 'abgelehnt' );
+}

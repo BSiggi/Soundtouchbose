@@ -62,13 +62,19 @@ function fg_antraege_save_meta_boxes( $post_id ) {
 		return;
 	}
 
-	$allowed_status = array( 'eingereicht', 'angenommen', 'abgelehnt' );
+	$allowed_status = fg_antraege_allowed_statuses();
 	$status         = isset( $_POST['fg_antrag_status'] ) ? sanitize_key( wp_unslash( $_POST['fg_antrag_status'] ) ) : 'eingereicht';
 	if ( ! in_array( $status, $allowed_status, true ) ) {
 		$status = 'eingereicht';
 	}
 
 	$request_day = isset( $_POST['fg_antrag_datum'] ) ? sanitize_text_field( wp_unslash( $_POST['fg_antrag_datum'] ) ) : '';
+	if ( '' !== $request_day ) {
+		$date = DateTime::createFromFormat( 'Y-m-d', $request_day );
+		if ( false === $date || $request_day !== $date->format( 'Y-m-d' ) ) {
+			$request_day = '';
+		}
+	}
 	$pdf_url     = isset( $_POST['fg_antrag_pdf_url'] ) ? esc_url_raw( wp_unslash( $_POST['fg_antrag_pdf_url'] ) ) : '';
 	$summary     = isset( $_POST['fg_antrag_summary'] ) ? sanitize_textarea_field( wp_unslash( $_POST['fg_antrag_summary'] ) ) : '';
 
