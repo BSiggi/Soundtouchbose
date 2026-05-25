@@ -13,6 +13,9 @@ from soundtouchbose.core.preset_manager import PresetManager
 
 LOGGER = logging.getLogger(__name__)
 HARDWARE_PRESET_CACHE_TTL_SECONDS = 300
+MAPPING_COUNT_CACHE_TTL_SECONDS = 60
+# Log once on first miss and once later for visibility without flooding logs on every poll.
+MISSING_TRIGGER_LOG_THRESHOLDS = {1, 10}
 
 
 @dataclass(slots=True)
@@ -36,6 +39,8 @@ class PresetBridgeController:
         self.client_factory = client_factory
         self._hardware_presets: dict[str, dict[int, _PresetSignature]] = {}
         self._hardware_presets_loaded_at: dict[str, float] = {}
+        self._mapping_counts: dict[str, int] = {}
+        self._mapping_counts_loaded_at: dict[str, float] = {}
         self._last_inferred_preset: dict[str, int | None] = {}
         self._device_start_logged: set[str] = set()
         self._diagnostics: dict[str, dict[str, int | bool]] = {}
@@ -62,21 +67,21 @@ class PresetBridgeController:
                 "detection_possible": False,
             },
         )
-        stats["snapshots_seen"] = int(stats["snapshots_seen"]) + 1
-        mapping_count = len(self.preset_manager.get_bridge_mappings(ip_address))
+        stats["snapshots_seen"] += 1
+        mapping_count = self._mapping_count(ip_address)
         stats["mapping_count"] = mapping_count
         if ip_address not in self._device_start_logged:
             self._device_start_logged.add(ip_address)
             LOGGER.info(
-                "Preset bridge active device=%s mappings=%s detection=preset_id_or_now_playing_signature",
+                "Preset bridge active device=%s mappings=%s detection_methods=preset_id,now_playing_signature",
                 ip_address,
                 mapping_count,
             )
         preset_number = self._infer_preset_number(ip_address, snapshot)
         if preset_number is None:
-            stats["trigger_missing"] = int(stats["trigger_missing"]) + 1
-            misses = int(stats["trigger_missing"])
-            if mapping_count and misses in {1, 10}:
+            stats["trigger_missing"] += 1
+            misses = stats["trigger_missing"]
+            if mapping_count > 0 and misses in MISSING_TRIGGER_LOG_THRESHOLDS:
                 LOGGER.warning(
                     "Preset bridge enabled but no trigger detected for device=%s yet "
                     "(mappings=%s snapshots=%s). Some SoundTouch models do not expose preset button events.",
@@ -89,7 +94,7 @@ class PresetBridgeController:
         if self._last_inferred_preset.get(ip_address) == preset_number:
             return
         self._last_inferred_preset[ip_address] = preset_number
-        stats["trigger_detected"] = int(stats["trigger_detected"]) + 1
+        stats["trigger_detected"] += 1
         stats["detection_possible"] = True
         station = self.preset_manager.get_bridge_station(ip_address, preset_number)
         if not station:
@@ -99,7 +104,7 @@ class PresetBridgeController:
                 preset_number,
             )
             return
-        stats["launch_attempted"] = int(stats["launch_attempted"]) + 1
+        stats["launch_attempted"] += 1
         LOGGER.info(
             "Preset bridge launch attempt device=%s preset=%s station=%s source=%s",
             ip_address,
@@ -110,7 +115,7 @@ class PresetBridgeController:
         try:
             self.client_factory(ip_address).select(station)
         except SoundTouchRequestError as exc:
-            stats["launch_failed"] = int(stats["launch_failed"]) + 1
+            stats["launch_failed"] += 1
             LOGGER.warning(
                 "Preset bridge launch failed device=%s preset=%s station=%s endpoint=%s status=%s",
                 ip_address,
@@ -120,7 +125,7 @@ class PresetBridgeController:
                 exc.status_code,
             )
             return
-        stats["launch_succeeded"] = int(stats["launch_succeeded"]) + 1
+        stats["launch_succeeded"] += 1
         LOGGER.info(
             "Preset bridge launch succeeded device=%s preset=%s station=%s source=%s endpoint=/select status=200",
             ip_address,
@@ -163,6 +168,15 @@ class PresetBridgeController:
             if source and item_name and source == signature.source and item_name == signature.name:
                 return preset_number
         return None
+
+    def _mapping_count(self, ip_address: str) -> int:
+        last_loaded = self._mapping_counts_loaded_at.get(ip_address, 0.0)
+        if ip_address in self._mapping_counts and time.time() - last_loaded < MAPPING_COUNT_CACHE_TTL_SECONDS:
+            return self._mapping_counts[ip_address]
+        mapping_count = len(self.preset_manager.get_bridge_mappings(ip_address))
+        self._mapping_counts[ip_address] = mapping_count
+        self._mapping_counts_loaded_at[ip_address] = time.time()
+        return mapping_count
 
     def _hardware_preset_signatures(self, ip_address: str) -> dict[int, _PresetSignature]:
         last_loaded = self._hardware_presets_loaded_at.get(ip_address, 0.0)

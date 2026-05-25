@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from html import escape
 from typing import Any
 from xml.etree import ElementTree as ET
 
 from soundtouchbose.core.station_library import Station
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _try_parse_int(value: object) -> int | None:
@@ -91,12 +94,15 @@ def parse_now_playing_xml(xml_text: str) -> dict[str, Any]:
 def parse_now_playing_update_xml(xml_text: str) -> dict[str, Any] | None:
     try:
         root = ET.fromstring(xml_text)
-    except ET.ParseError:
+    except ET.ParseError as exc:
+        LOGGER.debug("Ignoring non-XML websocket payload: %s", exc)
         return None
-    if _local_name(root.tag).lower() == "nowplaying":
+    root_tag = _local_name(root.tag).lower()
+    if root_tag == "nowplaying":
         return _parse_now_playing_element(root)
     for element in root.iter():
-        if _local_name(element.tag).lower() == "nowplaying":
+        element_tag = _local_name(element.tag).lower()
+        if element_tag == "nowplaying":
             return _parse_now_playing_element(element)
     return None
 
