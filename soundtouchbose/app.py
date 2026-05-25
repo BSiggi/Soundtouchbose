@@ -17,6 +17,7 @@ from soundtouchbose.core.cleanup_service import CleanupService
 from soundtouchbose.core.config import ConfigStore
 from soundtouchbose.core.diagnostics_service import DiagnosticsService
 from soundtouchbose.core.device_manager import DeviceManager
+from soundtouchbose.core.preset_bridge import PresetBridgeController
 from soundtouchbose.core.preset_manager import PresetManager
 from soundtouchbose.core.scheduler import SchedulerService
 from soundtouchbose.core.station_library import StationLibrary
@@ -130,12 +131,14 @@ def create_services(config_dir: Path | None = None) -> Services:
     client_factory = SoundTouchClient
     station_library = StationLibrary(config_store)
     device_manager = DeviceManager(config_store, client_factory)
+    preset_manager = PresetManager(config_store, client_factory)
     update_manager = UpdateManager(config_store, Path(__file__).resolve().parents[1], __version__)
     services = Services(
         config_store=config_store,
         device_manager=device_manager,
         station_library=station_library,
-        preset_manager=PresetManager(config_store, client_factory),
+        preset_manager=preset_manager,
+        preset_bridge=PresetBridgeController(config_store, preset_manager, client_factory),
         zone_manager=ZoneManager(config_store, client_factory),
         scheduler=SchedulerService(config_store, station_library, client_factory),
         update_manager=update_manager,

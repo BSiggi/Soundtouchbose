@@ -28,6 +28,9 @@ class PresetsTab(QWidget):
         self.services = services
         self.active_station: Station | None = None
         layout = QVBoxLayout(self)
+        self.bridge_info = QLabel("")
+        self.bridge_info.setWordWrap(True)
+        layout.addWidget(self.bridge_info)
         top_row = QHBoxLayout()
         top_row.addWidget(QLabel("Gerät:"))
         self.device_combo = QComboBox()
@@ -80,10 +83,14 @@ class PresetsTab(QWidget):
         if not station:
             QMessageBox.information(self, "Preset", "Der ausgewählte Sender wurde nicht gefunden.")
             return
+        bridge_enabled = bool(self.services.config_store.load_settings().get("preset_bridge_enabled", False))
         errors = []
         for ip_address in self.selected_ips():
             try:
-                self.services.preset_manager.assign_preset(ip_address, preset_number, station)
+                if bridge_enabled:
+                    self.services.preset_manager.assign_bridge_mapping(ip_address, preset_number, station)
+                else:
+                    self.services.preset_manager.assign_preset(ip_address, preset_number, station)
             except Exception as exc:
                 errors.append(f"{ip_address}: {user_error_text(exc)}")
         self.active_station = station
@@ -93,7 +100,19 @@ class PresetsTab(QWidget):
 
     def refresh_buttons(self) -> None:
         ips = self.selected_ips()
-        cache = self.services.preset_manager.load_cache()
+        bridge_enabled = bool(self.services.config_store.load_settings().get("preset_bridge_enabled", False))
+        cache = (
+            self.services.preset_manager.load_bridge_mappings()
+            if bridge_enabled
+            else self.services.preset_manager.load_cache()
+        )
+        if bridge_enabled:
+            self.bridge_info.setText(
+                "Preset-Bridge ist aktiv: Die Tasten 1–6 am Bose-Gerät werden nur als Auslöser genutzt. "
+                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets."
+            )
+        else:
+            self.bridge_info.setText("")
         for preset_number, button in self.buttons.items():
             label = f"Preset {preset_number}\nNicht belegt"
             if ips:
@@ -133,10 +152,18 @@ class PresetsTab(QWidget):
         apply_all_action = menu.addAction("Auf alle Geräte übernehmen")
         chosen = menu.exec(self.cursor().pos())
         if chosen == clear_action:
-            cache = self.services.preset_manager.load_cache()
+            bridge_enabled = bool(self.services.config_store.load_settings().get("preset_bridge_enabled", False))
+            cache = (
+                self.services.preset_manager.load_bridge_mappings()
+                if bridge_enabled
+                else self.services.preset_manager.load_cache()
+            )
             for ip_address in self.selected_ips():
                 cache.setdefault(ip_address, {}).pop(str(preset_number), None)
-            self.services.preset_manager.save_cache(cache)
+            if bridge_enabled:
+                self.services.preset_manager.save_bridge_mappings(cache)
+            else:
+                self.services.preset_manager.save_cache(cache)
             self.refresh_buttons()
         elif chosen == test_action:
             self.test_preset(preset_number)
@@ -145,11 +172,19 @@ class PresetsTab(QWidget):
 
     def test_preset(self, preset_number: int) -> None:
         errors = []
+        bridge_enabled = bool(self.services.config_store.load_settings().get("preset_bridge_enabled", False))
         for ip_address in self.selected_ips():
             try:
-                client = self.services.client_factory(ip_address)
-                client.send_key(f"PRESET_{preset_number}", "press")
-                client.send_key(f"PRESET_{preset_number}", "release")
+                if bridge_enabled:
+                    station = self.services.preset_manager.get_bridge_station(ip_address, preset_number)
+                    if station:
+                        self.services.client_factory(ip_address).select(station)
+                    else:
+                        errors.append(f"{ip_address}: Keine lokale Preset-Bridge-Zuordnung für Preset {preset_number}.")
+                else:
+                    client = self.services.client_factory(ip_address)
+                    client.send_key(f"PRESET_{preset_number}", "press")
+                    client.send_key(f"PRESET_{preset_number}", "release")
             except Exception as exc:
                 errors.append(f"{ip_address}: {user_error_text(exc)}")
         if errors:
@@ -160,12 +195,18 @@ class PresetsTab(QWidget):
         if not selected:
             return
         cache = self.services.preset_manager.load_cache()
+        bridge_enabled = bool(self.services.config_store.load_settings().get("preset_bridge_enabled", False))
+        if bridge_enabled:
+            cache = self.services.preset_manager.load_bridge_mappings()
         station_payload = cache.get(selected[0], {}).get(str(preset_number))
         if not station_payload:
             return
         station = Station.from_dict(station_payload)
         for device in self.services.device_manager.all_devices():
-            self.services.preset_manager.assign_preset(device.ip_address, preset_number, station)
+            if bridge_enabled:
+                self.services.preset_manager.assign_bridge_mapping(device.ip_address, preset_number, station)
+            else:
+                self.services.preset_manager.assign_preset(device.ip_address, preset_number, station)
         self.refresh_buttons()
 
     def apply_cached_to_all(self) -> None:
@@ -173,7 +214,12 @@ class PresetsTab(QWidget):
         if not selected:
             QMessageBox.information(self, "Presets", "Keine Geräte verfügbar.")
             return
-        cache = self.services.preset_manager.load_cache().get(selected[0], {})
+        bridge_enabled = bool(self.services.config_store.load_settings().get("preset_bridge_enabled", False))
+        cache = (
+            self.services.preset_manager.load_bridge_mappings().get(selected[0], {})
+            if bridge_enabled
+            else self.services.preset_manager.load_cache().get(selected[0], {})
+        )
         if not cache:
             QMessageBox.information(self, "Presets", "Für das ausgewählte Gerät sind keine Presets hinterlegt.")
             return
@@ -181,9 +227,14 @@ class PresetsTab(QWidget):
             int(preset_number): Station.from_dict(station_payload)
             for preset_number, station_payload in cache.items()
         }
-        device_ips = [device.ip_address for device in self.services.device_manager.all_devices()]
         try:
-            self.services.preset_manager.apply_to_all(device_ips, assignments)
+            if bridge_enabled:
+                for device in self.services.device_manager.all_devices():
+                    for preset_number, station in assignments.items():
+                        self.services.preset_manager.assign_bridge_mapping(device.ip_address, preset_number, station)
+            else:
+                device_ips = [device.ip_address for device in self.services.device_manager.all_devices()]
+                self.services.preset_manager.apply_to_all(device_ips, assignments)
         except Exception as exc:
             QMessageBox.warning(self, "Preset-Fehler", user_error_text(exc))
         self.refresh_buttons()

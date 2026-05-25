@@ -44,6 +44,7 @@ class DiagnosticsService:
             settings["home_assistant_token"] = "***masked***"
         devices = []
         network_checks = []
+        bridge_mappings = self.services.preset_manager.load_bridge_mappings()
         for device in self.services.device_manager.all_devices():
             reachable_8090 = self._check_port(device.ip_address, 8090)
             network_checks.append(
@@ -68,6 +69,11 @@ class DiagnosticsService:
             },
             "local_addresses": self._collect_local_addresses(),
             "settings": settings,
+            "preset_bridge": {
+                "enabled": bool(settings.get("preset_bridge_enabled", False)),
+                "mapped_devices": len(bridge_mappings),
+                "mapped_slots": sum(len(entry) for entry in bridge_mappings.values()),
+            },
             "devices": devices,
             "network_checks": network_checks,
             "firewall_hints": firewall_hints,

@@ -1,4 +1,10 @@
-from soundtouchbose.api.xml_helpers import build_content_item_xml, build_key_xml, parse_info_xml, parse_presets_xml
+from soundtouchbose.api.xml_helpers import (
+    build_content_item_xml,
+    build_key_xml,
+    parse_info_xml,
+    parse_now_playing_xml,
+    parse_presets_xml,
+)
 from soundtouchbose.core.station_library import Station
 
 
@@ -55,3 +61,16 @@ def test_parse_presets_xml_extracts_entries() -> None:
     parsed = parse_presets_xml(xml)
 
     assert parsed == [{"id": 1, "name": "Deutschlandfunk", "source": "TUNEIN", "location": "/v1/playback/station/s24875"}]
+
+
+def test_parse_now_playing_xml_reads_preset_id() -> None:
+    xml = """
+    <nowPlaying source="INTERNET_RADIO" presetID="3">
+      <ContentItem source="TUNEIN" location="/v1/playback/station/s24875" />
+      <itemName>Deutschlandfunk</itemName>
+    </nowPlaying>
+    """
+
+    parsed = parse_now_playing_xml(xml)
+
+    assert parsed["preset_id"] == 3

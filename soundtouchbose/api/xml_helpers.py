@@ -9,6 +9,18 @@ from xml.etree import ElementTree as ET
 from soundtouchbose.core.station_library import Station
 
 
+def _try_parse_int(value: object) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return int(text)
+    except ValueError:
+        return None
+
+
 def build_content_item_xml(station: Station) -> str:
     """Create a SoundTouch select payload from a station entry."""
     return (
@@ -50,8 +62,12 @@ def parse_info_xml(xml_text: str) -> dict[str, Any]:
 def parse_now_playing_xml(xml_text: str) -> dict[str, Any]:
     root = ET.fromstring(xml_text)
     content = root.find("ContentItem")
+    preset_id = _try_parse_int(root.attrib.get("presetID"))
+    if preset_id is None and content is not None:
+        preset_id = _try_parse_int(content.attrib.get("presetID"))
     return {
         "source": root.attrib.get("source", ""),
+        "preset_id": preset_id,
         "device_name": root.findtext("deviceName", default=""),
         "item_name": root.findtext("itemName", default=""),
         "station_name": root.findtext("stationName", default=""),

@@ -22,6 +22,26 @@ class PresetManager:
     def save_cache(self, payload: dict[str, dict[str, dict[str, object]]]) -> None:
         self.config_store.save_json("presets.json", payload)
 
+    def load_bridge_mappings(self) -> dict[str, dict[str, dict[str, object]]]:
+        return self.config_store.load_json("preset_bridge.json", {})
+
+    def save_bridge_mappings(self, payload: dict[str, dict[str, dict[str, object]]]) -> None:
+        self.config_store.save_json("preset_bridge.json", payload)
+
+    def assign_bridge_mapping(self, ip_address: str, preset_number: int, station: Station) -> None:
+        mappings = self.load_bridge_mappings()
+        mappings.setdefault(ip_address, {})[str(preset_number)] = station.to_dict()
+        self.save_bridge_mappings(mappings)
+
+    def get_bridge_mappings(self, ip_address: str) -> dict[str, dict[str, object]]:
+        return self.load_bridge_mappings().get(ip_address, {})
+
+    def get_bridge_station(self, ip_address: str, preset_number: int) -> Station | None:
+        payload = self.get_bridge_mappings(ip_address).get(str(preset_number))
+        if not payload:
+            return None
+        return Station.from_dict(payload)
+
     def assign_preset(self, ip_address: str, preset_number: int, station: Station) -> bool:
         client = self.client_factory(ip_address)
         ok = client.set_preset(preset_number, station)
