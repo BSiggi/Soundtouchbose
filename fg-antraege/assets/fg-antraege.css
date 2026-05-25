@@ -1,0 +1,85 @@
+.fg-antraege-counter {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+	gap: 12px;
+	margin: 0 0 20px;
+}
+
+.fg-antraege-counter__card {
+	background: #f3f4f6;
+	border: 1px solid #d9dde3;
+	border-radius: 8px;
+	padding: 12px;
+	text-align: center;
+}
+
+.fg-antraege-counter__value {
+	display: block;
+	font-size: 28px;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.fg-antraege-counter__label {
+	display: block;
+	margin-top: 4px;
+	font-size: 14px;
+	color: #485366;
+}
+
+.fg-antraege-list__filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+
+.fg-antraege-filter {
+	border: 1px solid #cfd6df;
+	background: #fff;
+	padding: 6px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.fg-antraege-filter.is-active {
+	background: #f3f4f6;
+}
+
+.fg-antrag-item {
+	border: 1px solid #dde2e8;
+	border-radius: 8px;
+	margin-bottom: 10px;
+}
+
+.fg-antrag-item__toggle {
+	width: 100%;
+	text-align: left;
+	background: #fff;
+	border: 0;
+	padding: 10px 12px;
+	cursor: pointer;
+}
+
+.fg-antrag-item__title {
+	font-weight: 600;
+}
+
+.fg-antrag-item__status,
+.fg-antrag-item__date {
+	display: inline-block;
+	margin-left: 8px;
+	font-size: 13px;
+}
+
+.fg-antrag-item__content {
+	padding: 0 12px 12px;
+}
+
+.status-angenommen {
+	color: #227b44;
+}
+
+.status-abgelehnt {
+	color: #9f1d1d;
+}
