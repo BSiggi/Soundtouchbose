@@ -31,9 +31,13 @@ SoundTouchBose is a local Windows desktop app for managing Bose SoundTouch devic
 
 ### Empfohlen: Windows `.exe` aus GitHub Actions
 
+Wenn dein Pull Request bereits **erfolgreich gemerged und geschlossen** ist:
+
 1. Repository öffnen → **Actions** → Workflow **Build Windows**.
-2. Nach erfolgreichem Lauf das Artifact `SoundTouchBose.exe` herunterladen.
-3. Die `.exe` auf dem 24/7-Windows-PC ausführen.
+2. Den neuesten Lauf auf `main` öffnen.
+3. Falls der Lauf rot ist: **Re-run jobs** ausführen und warten, bis der Lauf grün ist.
+4. Nach erfolgreichem Lauf das Artifact `SoundTouchBose.exe` herunterladen.
+5. Die `.exe` entpacken (falls ZIP) und auf dem 24/7-Windows-PC ausführen.
 
 ### Aus den Quellen
 
