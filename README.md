@@ -65,6 +65,12 @@ Die Anwendung nutzt ausschließlich lokale, weiterhin verfügbare Schnittstellen
 
 Nicht benötigt werden Bose-Konten, Cloud-Logins oder Spotify-Authentifizierung über Bose-Server.
 
+## Kosten-Stopp / Abschalt-Doku
+
+Eine vollständige Schritt-für-Schritt-Anleitung zum Stoppen automatischer Prozesse, lokalen Diensten und möglicher Kostenquellen liegt hier:
+
+- [`docs/KOSTEN-STOPP.md`](docs/KOSTEN-STOPP.md)
+
 ## FAQ / Troubleshooting
 
 ### Gerät wird nicht gefunden
