@@ -38,6 +38,10 @@ class DiagnosticsService:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
         return "\n".join(lines[-max_lines:])
 
+    def _bridge_log_tail(self, max_lines: int = 200) -> str:
+        lines = [line for line in self._tail_log(max_lines=1000).splitlines() if "Preset bridge" in line]
+        return "\n".join(lines[-max_lines:])
+
     def collect_report(self) -> dict[str, Any]:
         settings = self.services.config_store.load_settings().copy()
         if "home_assistant_token" in settings:
@@ -45,6 +49,10 @@ class DiagnosticsService:
         devices = []
         network_checks = []
         bridge_mappings = self.services.preset_manager.load_bridge_mappings()
+        bridge_status = {}
+        preset_bridge = getattr(self.services, "preset_bridge", None)
+        if preset_bridge is not None:
+            bridge_status = preset_bridge.diagnostics_snapshot()
         for device in self.services.device_manager.all_devices():
             reachable_8090 = self._check_port(device.ip_address, 8090)
             network_checks.append(
@@ -70,9 +78,11 @@ class DiagnosticsService:
             "local_addresses": self._collect_local_addresses(),
             "settings": settings,
             "preset_bridge": {
-                "enabled": bool(settings.get("preset_bridge_enabled", False)),
+                "enabled": bool(bridge_status.get("enabled", settings.get("preset_bridge_enabled", False))),
                 "mapped_devices": len(bridge_mappings),
                 "mapped_slots": sum(len(entry) for entry in bridge_mappings.values()),
+                "devices": bridge_status.get("devices", {}),
+                "recent_activity": bridge_status.get("recent_events", [])[-25:],
             },
             "devices": devices,
             "network_checks": network_checks,
@@ -84,9 +94,17 @@ class DiagnosticsService:
     def export(self, destination_zip: Path) -> Path:
         destination_zip.parent.mkdir(parents=True, exist_ok=True)
         report = self.collect_report()
+        bridge_mappings = self.services.preset_manager.load_bridge_mappings()
+        preset_bridge = getattr(self.services, "preset_bridge", None)
+        bridge_status = preset_bridge.diagnostics_snapshot() if preset_bridge is not None else {}
         with ZipFile(destination_zip, "w", compression=ZIP_DEFLATED) as archive:
             archive.writestr("diagnostics/report.json", json.dumps(report, ensure_ascii=False, indent=2))
             archive.writestr("diagnostics/app.log.tail.txt", self._tail_log())
+            archive.writestr("diagnostics/preset_bridge_mappings.json", json.dumps(bridge_mappings, ensure_ascii=False, indent=2))
+            archive.writestr("diagnostics/preset_bridge_status.json", json.dumps(bridge_status, ensure_ascii=False, indent=2))
+            bridge_log = self._bridge_log_tail()
+            if bridge_log:
+                archive.writestr("diagnostics/preset_bridge.log.tail.txt", bridge_log)
             update_log = self._tail_log("update.log")
             if update_log:
                 archive.writestr("diagnostics/update.log.tail.txt", update_log)

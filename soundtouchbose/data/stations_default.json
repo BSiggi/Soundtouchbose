@@ -23,6 +23,7 @@
   {"identifier": "s119094", "name": "Jazzradio.com", "category": "Jazz/Lounge", "source": "TUNEIN", "location": "/v1/playback/station/s119094"},
   {"identifier": "s2330", "name": "SomaFM Groove Salad", "category": "Jazz/Lounge", "source": "TUNEIN", "location": "/v1/playback/station/s2330"},
   {"identifier": "s24894", "name": "SWR1 BW", "category": "Oldies", "source": "TUNEIN", "location": "/v1/playback/station/s24894"},
+  {"identifier": "s4286", "name": "Bayern 1", "category": "Oldies", "source": "TUNEIN", "location": "/v1/playback/station/s4286"},
   {"identifier": "s24881", "name": "NDR 1 Niedersachsen", "category": "Oldies", "source": "TUNEIN", "location": "/v1/playback/station/s24881"},
   {"identifier": "s144674", "name": "Antenne Bayern Oldies", "category": "Oldies", "source": "TUNEIN", "location": "/v1/playback/station/s144674"},
   {"identifier": "s84128", "name": "Schlagerparadies", "category": "Schlager", "source": "TUNEIN", "location": "/v1/playback/station/s84128"},

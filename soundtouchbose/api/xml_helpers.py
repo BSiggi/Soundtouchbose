@@ -78,6 +78,19 @@ def parse_now_playing_xml(xml_text: str) -> dict[str, Any]:
     }
 
 
+def parse_now_playing_websocket_payload(payload: str) -> dict[str, Any] | None:
+    text = payload.strip()
+    if not text:
+        return None
+    start = text.find("<nowPlaying")
+    if start < 0:
+        return None
+    try:
+        return parse_now_playing_xml(text[start:])
+    except ET.ParseError:
+        return None
+
+
 def parse_presets_xml(xml_text: str) -> list[dict[str, Any]]:
     root = ET.fromstring(xml_text)
     presets: list[dict[str, Any]] = []

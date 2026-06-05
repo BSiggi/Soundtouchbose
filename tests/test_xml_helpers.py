@@ -2,6 +2,7 @@ from soundtouchbose.api.xml_helpers import (
     build_content_item_xml,
     build_key_xml,
     parse_info_xml,
+    parse_now_playing_websocket_payload,
     parse_now_playing_xml,
     parse_presets_xml,
 )
@@ -74,3 +75,22 @@ def test_parse_now_playing_xml_reads_preset_id() -> None:
     parsed = parse_now_playing_xml(xml)
 
     assert parsed["preset_id"] == 3
+
+
+def test_parse_now_playing_websocket_payload_reads_now_playing_xml() -> None:
+    payload = """
+    <nowPlaying source="INTERNET_RADIO" presetID="2">
+      <ContentItem source="TUNEIN" location="/v1/playback/station/s4286" />
+      <itemName>Bayern 1</itemName>
+    </nowPlaying>
+    """
+
+    parsed = parse_now_playing_websocket_payload(payload)
+
+    assert parsed is not None
+    assert parsed["preset_id"] == 2
+    assert parsed["item_name"] == "Bayern 1"
+
+
+def test_parse_now_playing_websocket_payload_ignores_other_messages() -> None:
+    assert parse_now_playing_websocket_payload("<volumeUpdated actual=\"15\" />") is None

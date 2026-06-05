@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -31,6 +31,9 @@ class PresetsTab(QWidget):
         self.bridge_info = QLabel("")
         self.bridge_info.setWordWrap(True)
         layout.addWidget(self.bridge_info)
+        self.bridge_status = QLabel("")
+        self.bridge_status.setWordWrap(True)
+        layout.addWidget(self.bridge_status)
         top_row = QHBoxLayout()
         top_row.addWidget(QLabel("Gerät:"))
         self.device_combo = QComboBox()
@@ -55,6 +58,9 @@ class PresetsTab(QWidget):
             grid.addWidget(button, (index - 1) // 3, (index - 1) % 3)
         layout.addLayout(grid)
         self.refresh_devices()
+        self.bridge_status_timer = QTimer(self)
+        self.bridge_status_timer.timeout.connect(self.refresh_bridge_status)
+        self.bridge_status_timer.start(2_000)
 
     def refresh_devices(self) -> None:
         current_data = self.device_combo.currentData()
@@ -109,10 +115,15 @@ class PresetsTab(QWidget):
         if bridge_enabled:
             self.bridge_info.setText(
                 "Preset-Bridge ist aktiv: Die Tasten 1–6 am Bose-Gerät werden nur als Auslöser genutzt. "
-                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets."
+                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets. "
+                "Nach dem Test: 'Einstellungen' → 'Diagnose exportieren'."
             )
         else:
-            self.bridge_info.setText("")
+            self.bridge_info.setText(
+                "Preset-Bridge ist deaktiviert. Zum Troubleshooting nach dem Test: "
+                "'Einstellungen' → 'Diagnose exportieren'."
+            )
+        self.refresh_bridge_status()
         for preset_number, button in self.buttons.items():
             label = f"Preset {preset_number}\nNicht belegt"
             if ips:
@@ -238,3 +249,51 @@ class PresetsTab(QWidget):
         except Exception as exc:
             QMessageBox.warning(self, "Preset-Fehler", user_error_text(exc))
         self.refresh_buttons()
+
+    def refresh_bridge_status(self) -> None:
+        ips = self.selected_ips()
+        if not ips:
+            self.bridge_status.setText("")
+            return
+        device_names = {
+            device.ip_address: (f"{device.name} ({device.ip_address})" if device.name else device.ip_address)
+            for device in self.services.device_manager.all_devices()
+        }
+        lines = []
+        for ip_address in ips:
+            status = self.services.preset_bridge.get_device_status(ip_address)
+            lines.append(
+                f"{device_names.get(ip_address, ip_address)}: "
+                f"Bridge {'an' if status.get('bridge_enabled') else 'aus'} | "
+                f"Zuordnungen {status.get('mapping_count', 0)} | "
+                f"Trigger {self._format_bridge_trigger(status)} | "
+                f"Start {self._format_bridge_launch(status)}"
+            )
+        self.bridge_status.setText("\n".join(lines))
+
+    @staticmethod
+    def _format_bridge_trigger(status: dict[str, object]) -> str:
+        trigger = status.get("last_trigger") or {}
+        if not isinstance(trigger, dict) or not trigger.get("detected"):
+            return "noch keiner erkannt"
+        mode = str(trigger.get("mode") or "unknown")
+        preset_number = trigger.get("preset_number")
+        return f"Preset {preset_number} ({mode})"
+
+    @staticmethod
+    def _format_bridge_launch(status: dict[str, object]) -> str:
+        launch = status.get("last_launch") or {}
+        if not isinstance(launch, dict):
+            return "noch kein Startversuch"
+        result = str(launch.get("result") or "idle")
+        station_name = str(launch.get("station_name") or "").strip()
+        if result == "succeeded":
+            return f"erfolgreich → {station_name or 'unbekannt'}"
+        if result == "failed":
+            error = str(launch.get("error") or "").strip()
+            return f"fehlgeschlagen → {station_name or 'unbekannt'} ({error or 'unbekannter Fehler'})"
+        if result == "no_mapping":
+            return "kein lokales Mapping vorhanden"
+        if result == "bridge_disabled":
+            return "Bridge deaktiviert"
+        return "noch kein Startversuch"
