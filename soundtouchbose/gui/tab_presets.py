@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -265,7 +265,7 @@ class PresetsTab(QWidget):
         self.refresh_buttons()
 
     def export_bridge_diagnostics(self) -> None:
-        default_name = f"soundtouchbose-preset-bridge-diagnose-{datetime.now():%Y%m%d-%H%M%S}.zip"
+        default_name = f"soundtouchbose-preset-bridge-diagnostics-{datetime.now(timezone.utc):%Y%m%d-%H%M%SZ}.zip"
         path, _ = QFileDialog.getSaveFileName(self, "Preset-Bridge-Diagnose exportieren", default_name, "ZIP (*.zip)")
         if not path:
             return

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -138,7 +138,7 @@ class SettingsTab(QWidget):
         )
 
     def export_diagnostics(self) -> None:
-        default_name = f"soundtouchbose-diagnose-{datetime.now():%Y%m%d-%H%M%S}.zip"
+        default_name = f"soundtouchbose-diagnostics-{datetime.now(timezone.utc):%Y%m%d-%H%M%SZ}.zip"
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Diagnose exportieren",

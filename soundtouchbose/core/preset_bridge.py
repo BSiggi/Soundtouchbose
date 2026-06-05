@@ -56,9 +56,9 @@ class PresetBridgeController:
     def _utc_now_iso() -> str:
         return datetime.now(timezone.utc).isoformat()
 
-    def _record_event(self, event_type: str, ip_address: str, **details: object) -> None:
-        event = {"timestamp_utc": self._utc_now_iso(), "event": event_type, "device_ip": ip_address, **details}
-        self._recent_events.append(event)
+    def _record_event(self, event: str, ip_address: str, **details: object) -> None:
+        payload = {"timestamp_utc": self._utc_now_iso(), "event": event, "device_ip": ip_address, **details}
+        self._recent_events.append(payload)
         if len(self._recent_events) > MAX_RECENT_EVENTS:
             self._recent_events = self._recent_events[-MAX_RECENT_EVENTS:]
 
@@ -101,7 +101,7 @@ class PresetBridgeController:
         self._last_trigger_preset[ip_address] = preset_number
         if not station:
             self._last_launch_status[ip_address] = "missing_mapping"
-            self._last_launch_error.pop(ip_address, None)
+            self._last_launch_error[ip_address] = ""
             LOGGER.info(
                 "Preset bridge enabled but no local mapping for device=%s preset=%s",
                 ip_address,
@@ -134,7 +134,7 @@ class PresetBridgeController:
             )
             return
         self._last_launch_status[ip_address] = "success"
-        self._last_launch_error.pop(ip_address, None)
+        self._last_launch_error[ip_address] = ""
         LOGGER.info(
             "Preset bridge launch succeeded device=%s preset=%s station=%s source=%s endpoint=/select status=200",
             ip_address,
