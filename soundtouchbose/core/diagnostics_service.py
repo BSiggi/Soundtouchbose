@@ -39,7 +39,7 @@ class DiagnosticsService:
         return "\n".join(lines[-max_lines:])
 
     def _bridge_log_tail(self, max_lines: int = 200) -> str:
-        lines = [line for line in self._tail_log(max_lines=1000).splitlines() if "Preset bridge" in line]
+        lines = [line for line in self._tail_log(max_lines=1000).splitlines() if "preset bridge" in line.lower()]
         return "\n".join(lines[-max_lines:])
 
     def collect_report(self) -> dict[str, Any]:

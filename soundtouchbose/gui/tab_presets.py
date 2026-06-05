@@ -21,6 +21,8 @@ from soundtouchbose.services import Services
 from soundtouchbose.core.station_library import Station
 from soundtouchbose.gui.widgets.preset_button import PresetButton
 
+BRIDGE_STATUS_REFRESH_INTERVAL_MS = 2_000
+
 
 class PresetsTab(QWidget):
     def __init__(self, services: Services) -> None:
@@ -60,7 +62,7 @@ class PresetsTab(QWidget):
         self.refresh_devices()
         self.bridge_status_timer = QTimer(self)
         self.bridge_status_timer.timeout.connect(self.refresh_bridge_status)
-        self.bridge_status_timer.start(2_000)
+        self.bridge_status_timer.start(BRIDGE_STATUS_REFRESH_INTERVAL_MS)
 
     def refresh_devices(self) -> None:
         current_data = self.device_combo.currentData()

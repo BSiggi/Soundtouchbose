@@ -155,7 +155,7 @@ class SettingsTab(QWidget):
             "Datei erstellt:\n"
             f"{report_path}\n\n"
             "Enthalten sind u. a. report.json, app.log.tail.txt, preset_bridge_mappings.json "
-            "und preset_bridge_status.json.",
+            "und preset_bridge_status.json sowie ggf. preset_bridge.log.tail.txt.",
         )
 
     def run_cleanup(self) -> None:
