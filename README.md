@@ -52,7 +52,7 @@ python -m soundtouchbose
 ## Update und Diagnose
 
 - **Einstellungen → Update anwenden …**: ZIP-Update auswählen, Backup wird automatisch erstellt, Änderungen in `logs/update.log` protokolliert.
-- **Einstellungen → Diagnose exportieren**: erzeugt ein ZIP mit Versions-/OS-Infos, Gerätestatus, Netz-Checks und relevanten Logs.
+- **Einstellungen → Diagnose exportieren** oder **Presets → Preset-Bridge Diagnose exportieren …**: erzeugt ein ZIP mit Versions-/OS-Infos, Gerätestatus, Bridge-Zuordnungen/Runtime, Netz-Checks und relevanten Logs.
 - **Einstellungen → Cleanup ausführen**: entfernt Autostart, bereinigt alte Backups und versucht bekannte Windows-Dienste sauber zu stoppen.
 
 ## Bose-Cloud-Shutdown
@@ -78,6 +78,13 @@ Nicht benötigt werden Bose-Konten, Cloud-Logins oder Spotify-Authentifizierung 
 - Sicherstellen, dass der Sender kurz gestartet werden kann
 - Prüfen, ob das Gerät im LAN erreichbar ist
 - Bei Bedarf den Sender testweise im Tab **Sender** abspielen
+
+### Preset-Bridge löst nicht aus
+
+- Preset-Bridge arbeitet als lokaler Workaround und versucht Trigger über `now_playing` (WebSocket + Fallback-Polling) zu erkennen.
+- Nach SoundTouch-EOL melden einige Geräte Preset-Tastendrücke nicht zuverlässig – dann kann kein Trigger erkannt werden.
+- In **Presets** wird der aktuelle Trigger-Status angezeigt (z. B. „kein Preset-Trigger erkannt“).
+- Danach **Preset-Bridge Diagnose exportieren …** und ZIP-Datei für Support bereitstellen.
 
 ### Web-UI ist nicht erreichbar
 

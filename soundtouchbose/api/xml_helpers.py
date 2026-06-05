@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from html import escape
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -76,6 +77,30 @@ def parse_now_playing_xml(xml_text: str) -> dict[str, Any]:
         "album": root.findtext("album", default=""),
         "content_item": content.attrib if content is not None else {},
     }
+
+
+def parse_websocket_now_playing_payload(payload: str) -> dict[str, Any]:
+    text = payload.strip()
+    if not text:
+        return {}
+    if text.startswith("<nowPlaying"):
+        return parse_now_playing_xml(text)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+    if isinstance(data, str) and "<nowPlaying" in data:
+        return parse_now_playing_xml(data)
+    if not isinstance(data, dict):
+        return {}
+    for value in data.values():
+        if isinstance(value, str) and "<nowPlaying" in value:
+            return parse_now_playing_xml(value)
+        if isinstance(value, dict):
+            for nested in value.values():
+                if isinstance(nested, str) and "<nowPlaying" in nested:
+                    return parse_now_playing_xml(nested)
+    return {}
 
 
 def parse_presets_xml(xml_text: str) -> list[dict[str, Any]]:

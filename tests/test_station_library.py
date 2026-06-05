@@ -11,6 +11,8 @@ def test_station_library_loads_bundled_stations(tmp_path: Path) -> None:
 
     assert len(stations) >= 40
     assert any(station.name == "Deutschlandfunk" for station in stations)
+    assert any(station.name == "Bayern 1" for station in stations)
+    assert any(station.name in {"Radio Bob", "Radio Bob!"} for station in stations)
 
 
 def test_station_library_search_filters_by_term_and_category(tmp_path: Path) -> None:

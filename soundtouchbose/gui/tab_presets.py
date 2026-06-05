@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QGridLayout,
     QHBoxLayout,
     QInputDialog,
@@ -31,6 +35,12 @@ class PresetsTab(QWidget):
         self.bridge_info = QLabel("")
         self.bridge_info.setWordWrap(True)
         layout.addWidget(self.bridge_info)
+        self.bridge_status = QLabel("")
+        self.bridge_status.setWordWrap(True)
+        layout.addWidget(self.bridge_status)
+        self.bridge_diagnostics_button = QPushButton("Preset-Bridge Diagnose exportieren …")
+        self.bridge_diagnostics_button.clicked.connect(self.export_bridge_diagnostics)
+        layout.addWidget(self.bridge_diagnostics_button)
         top_row = QHBoxLayout()
         top_row.addWidget(QLabel("Gerät:"))
         self.device_combo = QComboBox()
@@ -109,10 +119,19 @@ class PresetsTab(QWidget):
         if bridge_enabled:
             self.bridge_info.setText(
                 "Preset-Bridge ist aktiv: Die Tasten 1–6 am Bose-Gerät werden nur als Auslöser genutzt. "
-                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets."
+                "Die Zuordnung ist lokal in dieser App gespeichert und überschreibt keine Bose-Presets. "
+                "Die Erkennung erfolgt über now_playing-Status/WebSocket und kann je nach Bose-Firmware unzuverlässig sein."
+            )
+            selected_ip = ips[0] if ips else ""
+            self.bridge_status.setText(
+                self.services.preset_bridge.status_message(selected_ip)
+                if selected_ip
+                else "Preset-Bridge aktiv. Bitte ein Gerät auswählen, um den Trigger-Status zu sehen."
             )
         else:
             self.bridge_info.setText("")
+            self.bridge_status.setText("")
+        self.bridge_diagnostics_button.setVisible(bridge_enabled)
         for preset_number, button in self.buttons.items():
             label = f"Preset {preset_number}\nNicht belegt"
             if ips:
@@ -189,6 +208,12 @@ class PresetsTab(QWidget):
                 errors.append(f"{ip_address}: {user_error_text(exc)}")
         if errors:
             QMessageBox.warning(self, "Preset-Test fehlgeschlagen", "\n".join(errors))
+        elif bridge_enabled:
+            QMessageBox.information(
+                self,
+                "Preset-Test gestartet",
+                "Der lokale Stream-Start wurde ausgelöst. Wenn am Gerät nichts passiert, bitte Preset-Bridge-Diagnose exportieren.",
+            )
 
     def apply_single_to_all(self, preset_number: int) -> None:
         selected = self.selected_ips()
@@ -238,3 +263,20 @@ class PresetsTab(QWidget):
         except Exception as exc:
             QMessageBox.warning(self, "Preset-Fehler", user_error_text(exc))
         self.refresh_buttons()
+
+    def export_bridge_diagnostics(self) -> None:
+        default_name = f"soundtouchbose-preset-bridge-diagnose-{datetime.now():%Y%m%d-%H%M%S}.zip"
+        path, _ = QFileDialog.getSaveFileName(self, "Preset-Bridge-Diagnose exportieren", default_name, "ZIP (*.zip)")
+        if not path:
+            return
+        try:
+            report_path = self.services.diagnostics_service.export(Path(path))
+        except Exception as exc:
+            QMessageBox.warning(self, "Diagnose fehlgeschlagen", user_error_text(exc))
+            return
+        QMessageBox.information(
+            self,
+            "Diagnose exportiert",
+            "Bitte diese ZIP-Datei für den Support weitergeben:\n"
+            f"{report_path}",
+        )

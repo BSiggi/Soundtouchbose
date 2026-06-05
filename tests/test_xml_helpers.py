@@ -4,6 +4,7 @@ from soundtouchbose.api.xml_helpers import (
     parse_info_xml,
     parse_now_playing_xml,
     parse_presets_xml,
+    parse_websocket_now_playing_payload,
 )
 from soundtouchbose.core.station_library import Station
 
@@ -74,3 +75,18 @@ def test_parse_now_playing_xml_reads_preset_id() -> None:
     parsed = parse_now_playing_xml(xml)
 
     assert parsed["preset_id"] == 3
+
+
+def test_parse_websocket_now_playing_payload_reads_xml_body_from_json() -> None:
+    payload = (
+        '{"header":{"name":"nowPlayingUpdated"},'
+        '"body":"<nowPlaying source=\\"INTERNET_RADIO\\" presetID=\\"2\\"><itemName>Test</itemName></nowPlaying>"}'
+    )
+
+    parsed = parse_websocket_now_playing_payload(payload)
+
+    assert parsed["preset_id"] == 2
+
+
+def test_parse_websocket_now_playing_payload_returns_empty_for_non_nowplaying_payload() -> None:
+    assert parse_websocket_now_playing_payload('{"header":{"name":"volumeUpdated"}}') == {}
