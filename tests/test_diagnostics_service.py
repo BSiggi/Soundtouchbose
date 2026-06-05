@@ -24,7 +24,15 @@ class FakeDeviceManager:
 
 class FakePresetManager:
     def load_bridge_mappings(self):
-        return {"127.0.0.1": {"1": {"name": "Bridge Test"}}}
+        return {"127.0.0.1": {"1": {"identifier": "bridge-1", "name": "Bridge Test", "source": "TUNEIN", "location": "/v1/playback/station/s1"}}}
+
+
+class FakePresetBridge:
+    def diagnostics_snapshot(self):
+        return {
+            "devices": {"127.0.0.1": {"snapshots_seen": 3, "last_launch_status": "failed"}},
+            "recent_events": [{"event": "launch_failed", "device_ip": "127.0.0.1"}],
+        }
 
 
 def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
@@ -34,6 +42,7 @@ def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
         config_store=config_store,
         device_manager=FakeDeviceManager(),
         preset_manager=FakePresetManager(),
+        preset_bridge=FakePresetBridge(),
     )
     service = DiagnosticsService(context)
     destination = tmp_path / "diagnostics.zip"
@@ -44,5 +53,7 @@ def test_diagnostics_export_masks_sensitive_settings(tmp_path: Path) -> None:
     assert report["settings"]["home_assistant_token"] == "***masked***"
     assert report["preset_bridge"]["enabled"] is False
     assert report["preset_bridge"]["mapped_slots"] == 1
+    assert report["preset_bridge"]["configured_mappings"]["127.0.0.1"]["1"]["name"] == "Bridge Test"
+    assert report["preset_bridge"]["runtime"]["devices"]["127.0.0.1"]["last_launch_status"] == "failed"
     assert created.exists()
     assert created == destination

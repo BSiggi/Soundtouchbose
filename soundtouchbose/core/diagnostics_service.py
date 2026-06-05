@@ -45,6 +45,18 @@ class DiagnosticsService:
         devices = []
         network_checks = []
         bridge_mappings = self.services.preset_manager.load_bridge_mappings()
+        bridge_mappings_summary = {
+            ip_address: {
+                preset_number: {
+                    "identifier": str(station_payload.get("identifier", "")),
+                    "name": str(station_payload.get("name", "")),
+                    "source": str(station_payload.get("source", "")),
+                    "location": str(station_payload.get("location", "")),
+                }
+                for preset_number, station_payload in sorted(slots.items(), key=lambda item: item[0])
+            }
+            for ip_address, slots in sorted(bridge_mappings.items(), key=lambda item: item[0])
+        }
         for device in self.services.device_manager.all_devices():
             reachable_8090 = self._check_port(device.ip_address, 8090)
             network_checks.append(
@@ -73,6 +85,8 @@ class DiagnosticsService:
                 "enabled": bool(settings.get("preset_bridge_enabled", False)),
                 "mapped_devices": len(bridge_mappings),
                 "mapped_slots": sum(len(entry) for entry in bridge_mappings.values()),
+                "configured_mappings": bridge_mappings_summary,
+                "runtime": self.services.preset_bridge.diagnostics_snapshot(),
             },
             "devices": devices,
             "network_checks": network_checks,

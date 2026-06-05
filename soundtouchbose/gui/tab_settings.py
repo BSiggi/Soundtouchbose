@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -55,7 +56,8 @@ class SettingsTab(QWidget):
         self.preset_bridge_enabled.setChecked(self.settings.get("preset_bridge_enabled", False))
         self.preset_bridge_note = QLabel(
             "Optionaler Workaround nach SoundTouch-EOL: Preset-Tasten am Gerät dienen nur als Auslöser für lokal "
-            "in der App hinterlegte Streams. Bose-Presets am Gerät werden dabei nicht geändert."
+            "in der App hinterlegte Streams. Bose-Presets am Gerät werden dabei nicht geändert. "
+            "Je nach Firmware melden Geräte Tastendrücke nicht zuverlässig."
         )
         self.preset_bridge_note.setWordWrap(True)
         layout.addRow("Mit Windows starten", self.autostart)
@@ -136,10 +138,11 @@ class SettingsTab(QWidget):
         )
 
     def export_diagnostics(self) -> None:
+        default_name = f"soundtouchbose-diagnostics-{datetime.now(timezone.utc):%Y%m%d-%H%M%SZ}.zip"
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Diagnose exportieren",
-            "soundtouchbose-diagnose.zip",
+            default_name,
             "ZIP (*.zip)",
         )
         if not path:
@@ -149,7 +152,13 @@ class SettingsTab(QWidget):
         except Exception as exc:
             QMessageBox.warning(self, "Diagnose fehlgeschlagen", user_error_text(exc))
             return
-        QMessageBox.information(self, "Diagnose exportiert", f"Datei erstellt:\n{report_path}")
+        QMessageBox.information(
+            self,
+            "Diagnose exportiert",
+            "Datei erstellt:\n"
+            f"{report_path}\n\n"
+            "Enthält u. a. Preset-Bridge-Status, Zuordnungen und aktuelle Fehler-/Warnmeldungen.",
+        )
 
     def run_cleanup(self) -> None:
         if QMessageBox.question(
