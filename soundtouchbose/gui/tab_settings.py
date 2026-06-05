@@ -149,7 +149,14 @@ class SettingsTab(QWidget):
         except Exception as exc:
             QMessageBox.warning(self, "Diagnose fehlgeschlagen", user_error_text(exc))
             return
-        QMessageBox.information(self, "Diagnose exportiert", f"Datei erstellt:\n{report_path}")
+        QMessageBox.information(
+            self,
+            "Diagnose exportiert",
+            "Datei erstellt:\n"
+            f"{report_path}\n\n"
+            "Enthalten sind u. a. report.json, app.log.tail.txt, preset_bridge_mappings.json "
+            "und preset_bridge_status.json sowie ggf. preset_bridge.log.tail.txt.",
+        )
 
     def run_cleanup(self) -> None:
         if QMessageBox.question(

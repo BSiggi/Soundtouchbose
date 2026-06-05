@@ -5,10 +5,11 @@ from __future__ import annotations
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QScrollArea, QVBoxLayout, QWidget
 
+from soundtouchbose.api.xml_helpers import parse_now_playing_websocket_payload
 from soundtouchbose.api.websocket_client import SoundTouchWebSocketClient
 from soundtouchbose.core.error_texts import source_display_text
-from soundtouchbose.services import Services
 from soundtouchbose.gui.widgets.device_card import DeviceCard
+from soundtouchbose.services import Services
 
 
 class DashboardTab(QWidget):
@@ -44,7 +45,10 @@ class DashboardTab(QWidget):
                 self.services.preset_bridge.handle_snapshot(device.ip_address, snapshot)
                 card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
                 if device.ip_address not in self.websocket_clients:
-                    self.websocket_clients[device.ip_address] = SoundTouchWebSocketClient(device.ip_address, lambda _msg, ip=device.ip_address: self.refresh_single(ip))
+                    self.websocket_clients[device.ip_address] = SoundTouchWebSocketClient(
+                        device.ip_address,
+                        lambda payload, ip=device.ip_address: self.handle_websocket_message(ip, payload),
+                    )
                     self.websocket_clients[device.ip_address].start()
             except Exception:
                 card.update_state(online=False, source="")
@@ -63,6 +67,16 @@ class DashboardTab(QWidget):
             card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
         except Exception:
             card.update_state(online=False, source="")
+
+    def handle_websocket_message(self, ip_address: str, payload: str) -> None:
+        snapshot = parse_now_playing_websocket_payload(payload)
+        if snapshot is None:
+            self.refresh_single(ip_address)
+            return
+        self.services.preset_bridge.handle_snapshot(ip_address, snapshot)
+        card = self.cards.get(ip_address)
+        if card:
+            card.update_state(online=True, source=source_display_text(str(snapshot.get("source", "")), snapshot))
 
     def set_volume(self, ip_address: str, value: int) -> None:
         self.services.client_factory(ip_address).set_volume(value)

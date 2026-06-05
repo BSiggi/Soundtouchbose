@@ -9,7 +9,9 @@ def test_station_library_loads_bundled_stations(tmp_path: Path) -> None:
 
     stations = library.all_stations()
 
-    assert len(stations) >= 40
+    assert len(stations) >= 41
+    assert any(station.name == "Bayern 1" for station in stations)
+    assert any(station.name == "Radio Bob" for station in stations)
     assert any(station.name == "Deutschlandfunk" for station in stations)
 
 
